@@ -1,0 +1,39 @@
+<html>
+
+<head>
+<title>Fuzzy</title>
+<meta name="viewport" content="initial-scale=1, maximum-scale=1">
+<link href="{{ static_url('css/editor.css') }}" type="text/css" rel="stylesheet"/>
+</head>
+
+<body id="fuzzy">
+
+<div id="outer">
+<div id="inner">
+
+<div id="left">
+<div id="navbar">
+<input placeholder="query or title" id="query"></input><div id="newdoc"></div>
+</div>
+<div id="results"></div>
+</div>
+
+<div id="right">
+<div id="output">
+<div id="modbox">&nbsp;</div>
+<div id="head">
+<span id="title"></span>&nbsp;<span id="tags"></span>
+</div>
+<div id="body"></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<script src="{{ static_url('js/jquery.min.js') }}" type="text/javascript"></script>
+<script src="{{ static_url('js/editor.js') }}" type="text/javascript"></script>
+
+</body>
+
+</html>
