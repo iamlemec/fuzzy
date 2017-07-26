@@ -145,6 +145,18 @@ function ensure_active() {
     }
 }
 
+function ensure_inactive() {
+    if (active) {
+        title.empty();
+        tags.empty();
+        body.empty();
+        title.attr('contentEditable', false);
+        body.attr('contentEditable', false);
+        fuzzy.removeClass('active');
+        active = false;
+    }
+}
+
 function render_entry(info) {
     var name = '<span class="res_name">' + info['file'] + ' - ' + info['line'] + '</span>';
     var text = info['text'];
@@ -352,6 +364,8 @@ $(document).ready(function () {
     delbox.click(function(event) {
         var ans = window.confirm('Are you sure you want to delete ' + file + '?');
         if (ans) {
+            $('.res_box[file=' + file + ']').remove();
+            ensure_inactive();
             send_command('delete', {'file': file});
         }
     });
