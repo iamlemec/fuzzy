@@ -140,6 +140,7 @@ function ensure_active() {
     if (!active) {
         title.attr('contentEditable', true);
         body.attr('contentEditable', true);
+        fuzzy.addClass('active');
         active = true;
     }
 }
@@ -191,7 +192,6 @@ function render_output(info) {
         body.append($('<div>', {text: s}));
     });
 }
-
 
 function create_tag(box) {
     var tag = render_tag('');
@@ -320,6 +320,7 @@ $(document).ready(function () {
     title = $('#title');
     tags = $('#tags');
     newdoc = $('#newdoc');
+    delbox = $('#delbox');
 
     // global states
     file = null;
@@ -345,6 +346,14 @@ $(document).ready(function () {
             'body': ''
         });
         select_all(title[0]);
+        set_modified(true);
+    });
+
+    delbox.click(function(event) {
+        var ans = window.confirm('Are you sure you want to delete ' + file + '?');
+        if (ans) {
+            send_command('delete', {'file': file});
+        }
     });
 
     output.keypress(function(event) {

@@ -164,19 +164,27 @@ body {
     background-color: blue;
 }
 
-#modbox {
+#delbox {
     visibility: hidden;
-    background-color: red;
+    cursor: default;
+    background-color: #4284F2;
     border-radius: 3px;
     position: absolute;
     right: 6px;
     top: 6px;
-    height: 17px;
-    width: 17px;
+    font-size: 15px;
+    font-weight: bold;
+    padding-left: 3px;
+    height: 19px;
+    width: 19px;
 }
 
-#fuzzy.modified #modbox {
+#fuzzy.active #delbox {
     visibility: visible;
+}
+
+#fuzzy.modified #delbox {
+    background-color: red;
 }
 
 #newdoc {
@@ -191,6 +199,7 @@ body {
     font-size: 15px;
     padding-left: 2px;
     font-weight: bold;
+    color: white;
 }
 
 /* body language */

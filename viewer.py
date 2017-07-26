@@ -25,6 +25,13 @@ max_res = 100
 # search tools
 cmd = 'ag --nobreak --noheading ".+" "%(path)s" | fzf -f "%(words)s" | head -n %(max_res)d'
 
+# utils
+def validate_path(relpath):
+    absbase = os.path.abspath(args.path)
+    abspath = os.path.abspath(os.path.join(absbase, relpath))
+    prefix = os.path.normpath(os.path.commonprefix([abspath, absbase]))
+    return (prefix == absbase) and (len(abspath) > len(absbase))
+
 # searching
 def search(words):
     query = cmd % dict(path=args.path, words=words, max_res=max_res)
@@ -70,6 +77,13 @@ def save_file(fname, info):
     fid.write(text)
     fid.close()
     shutil.move(tpath, fpath)
+
+def delete_file(fname):
+    if validate_path(fname):
+        fpath = os.path.join(args.path, fname)
+        os.remove(fpath)
+    else:
+        print('Invalid path: %s' % fname)
 
 # text tools
 def bsplit(s, sep='\n'):
@@ -131,6 +145,14 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
                 fname = cont.pop('file')
                 print('Saving: %s' % fname)
                 save_file(fname, cont)
+            except Exception as e:
+                print(e)
+                print(traceback.format_exc())
+        elif cmd == 'delete':
+            try:
+                fname = cont['file']
+                print('Delete: %s' % fname)
+                delete_file(fname)
             except Exception as e:
                 print(e)
                 print(traceback.format_exc())
