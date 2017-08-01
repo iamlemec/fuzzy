@@ -174,9 +174,9 @@ body {
     top: 6px;
     font-size: 15px;
     font-weight: bold;
-    padding-left: 3px;
-    height: 19px;
-    width: 19px;
+    padding-left: 2px;
+    height: 17px;
+    width: 17px;
 }
 
 #fuzzy.active #delbox {
@@ -196,8 +196,8 @@ body {
     top: 6px;
     height: 17px;
     width: 17px;
-    font-size: 15px;
-    padding-left: 2px;
+    font-size: 14px;
+    padding-left: 1px;
     font-weight: bold;
     color: white;
 }

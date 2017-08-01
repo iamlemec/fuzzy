@@ -12,9 +12,11 @@ import tornado.websocket
 # parse input arguments
 parser = argparse.ArgumentParser(description='Fuzzy Server.')
 parser.add_argument('--path', type=str, help='location of files')
+parser.add_argument('--ip', type=str, default='127.0.0.1', help='ip address to listen on')
 parser.add_argument('--port', type=int, default=9020, help='port to serve on')
 parser.add_argument('--tag', type=str, default='#', help='tag indicator')
 parser.add_argument('--sep', type=bool, default=False, help='put tags on next line')
+parser.add_argument('--auth', type=str, default=None)
 args = parser.parse_args()
 
 # hardcoded
@@ -24,6 +26,27 @@ max_res = 100
 
 # search tools
 cmd = 'ag --nobreak --noheading ".+" "%(path)s" | fzf -f "%(words)s" | head -n %(max_res)d'
+
+# authentication
+if args.auth is not None:
+    with open(args.auth) as fid:
+      auth = json.load(fid)
+    cookie_secret = auth['cookie_secret']
+    username_true = auth['username']
+    password_true = auth['password']
+    def authenticated(get0):
+        def get1(self, *args):
+            current_user = self.get_secure_cookie('user')
+            print(current_user)
+            if not current_user:
+                self.redirect('/login/')
+                return
+            get0(self, *args)
+        return get1
+else:
+    cookie_secret = None
+    def authenticated(get0):
+        return get0
 
 # utils
 def validate_path(relpath):
@@ -92,7 +115,45 @@ def bsplit(s, sep='\n'):
     else:
         return s.split(sep, maxsplit=1)
 
+# authorization handlers
+class AuthLoginHandler(tornado.web.RequestHandler):
+    def get(self):
+        try:
+            errormessage = self.get_argument('error')
+        except:
+            errormessage = ''
+        self.render('login.html', errormessage=errormessage)
+
+    def check_permission(self, password, username):
+        if username == username_true and password == password_true:
+            return True
+        return False
+
+    def post(self):
+        username = self.get_argument('username', '')
+        password = self.get_argument('password', '')
+        auth = self.check_permission(password, username)
+        if auth:
+            self.set_current_user(username)
+            self.redirect('/')
+        else:
+            error_msg = '?error=' + tornado.escape.url_escape('Login incorrect')
+            self.redirect('/login/' + error_msg)
+
+    def set_current_user(self, user):
+        if user:
+            print(user)
+            self.set_secure_cookie('user', tornado.escape.json_encode(user))
+        else:
+            self.clear_cookie('user')
+
+class AuthLogoutHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.clear_cookie('user')
+        self.redirect(self.get_argument('next', '/'))
+
 class EditorHandler(tornado.web.RequestHandler):
+    @authenticated
     def get(self):
         self.render('editor.html')
 
@@ -120,6 +181,7 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
     def write_json(self, js):
         self.write_message(json.dumps(js))
 
+    @authenticated
     def on_message(self, msg):
         data = json.loads(msg)
         (cmd, cont) = (data['cmd'], data['content'])
@@ -162,17 +224,19 @@ class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r'/', EditorHandler),
-            (r'/fuzzy', FuzzyHandler)
+            (r'/fuzzy', FuzzyHandler),
+            (r'/login/?', AuthLoginHandler),
+            (r'/logout/?', AuthLogoutHandler)
         ]
         settings = dict(
             app_name='Fuzzy Editor',
             template_path='templates',
             static_path='static',
-            xsrf_cookies=True,
+            cookie_secret=cookie_secret
         )
         tornado.web.Application.__init__(self, handlers, debug=True, **settings)
 
 # create server
 application = Application()
-application.listen(args.port)
+application.listen(args.port, address=args.ip)
 tornado.ioloop.IOLoop.current().start()
