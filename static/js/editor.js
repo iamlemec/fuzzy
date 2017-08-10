@@ -16,7 +16,8 @@ function strip_tags(html) {
                .replace(/<br>/g, '')
                .replace(/<span ?.*?>/g, '')
                .replace(/<\/span>/g, '')
-               .replace(/<\/div>/g, '\n');
+               .replace(/<\/div>/g, '\n')
+               .replace(/&amp;/g, '&');
 };
 
 function is_editable(element) {
