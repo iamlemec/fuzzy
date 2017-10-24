@@ -1,0 +1,42 @@
+<html>
+
+<head>
+<title>Elltwo Login</title>
+<link href="{{ static_url('css/login.css') }}" type="text/css" rel="stylesheet"/>
+</head>
+
+<body>
+
+<h1 class="title">Elltwo Login</h1>
+
+<div class="logbox">
+
+<form action="/login/" method="post" id="login_form">
+    <div>
+
+    <div class="entry inpbox">
+    <span class="linpcell">Username</span>
+    <span class="rinpcell"><input class="text-input" id="username" name="username" type="text" value=""></span>
+    </div>
+
+    <div class="entry inpbox">
+    <span class="linpcell">Password</span>
+    <span class="rinpcell"><input class="text-input" id="password" name="password" type="password" value=""></span>
+    </div>
+
+{% if errormessage != "" %}
+    <div class="entry errbox"><span class="errmsg">{{ errormessage }}</span></div>
+{% end %}
+
+    </div>
+
+    <div id="form_btn">
+        <input id="signin-btn" type="submit" value="Sign In" tabindex="3">
+    </div>
+</form>
+
+</div>
+
+</body>
+
+</html>

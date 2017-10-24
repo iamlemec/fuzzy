@@ -1,0 +1,78 @@
+@import url("montserrat.css");
+
+* {
+    font-family: Montserrat;
+}
+
+.title {
+    text-align: center;
+    margin-top: 70px;
+    margin-bottom: 40px;
+}
+
+.logbox {
+    font-size: 17px;
+}
+
+.entry {
+    width: 400px;
+    margin: auto;
+    border-top: 1px solid #CCC;
+    border-left: 1px solid #CCC;
+    border-right: 1px solid #CCC;
+    border-bottom: none;
+}
+
+.entry:first-child {
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+.entry:last-child {
+    border-bottom: 1px solid #CCC;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+.errbox {
+    height: 16px;
+}
+
+#form_btn {
+    margin-top: 40px;
+    margin-left: auto;
+    text-align: center;
+}
+
+.inpbox {
+    display: table;
+}
+
+.linpcell {
+    font-size: 18px;
+    display: table-cell;
+    width: 30%;
+    border-right: 1px solid #CCC;
+    padding: 10px;
+    background-color: rgb(53, 122, 232);
+    color: white;
+}
+
+.rinpcell {
+    display: table-cell;
+    width: 70%;
+}
+
+.text-input {
+    width: 100%;
+    border: 0px;
+    padding: 0px;
+    outline: 0px;
+    padding-left: 10px;
+    background-color: white;
+    font-size: 20px;
+    text-decoration: none;
+    font-family: courier;
+    line-height: 150%;
+}
+
