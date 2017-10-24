@@ -4,6 +4,7 @@ import argparse
 import traceback
 import subprocess as sub
 import shutil
+from collections import OrderedDict
 
 import tornado.ioloop
 import tornado.web
@@ -23,9 +24,10 @@ args = parser.parse_args()
 tmp_dir = 'temp'
 max_len = 90
 max_res = 100
+max_per = 5
 
 # search tools
-cmd = 'ag --nobreak --noheading ".+" "%(path)s" | fzf -f "%(words)s" | head -n %(max_res)d'
+cmd = 'ag --nobreak --noheading --depth=0 ".+" "%(path)s" | fzf -f "%(words)s" | head -n %(max_res)d'
 
 # authentication
 if args.auth is not None:
@@ -56,17 +58,26 @@ def validate_path(relpath):
     return (prefix == absbase) and (len(abspath) > len(absbase))
 
 # searching
-def search(words):
+def make_result(fname, info):
+    return {
+        'file': fname,
+        'num': len(info),
+        'text': [f'{i}: {t}' for i, t in info[:max_per]]
+    }
+
+def search(words, block=True):
     query = cmd % dict(path=args.path, words=words, max_res=max_res)
     with sub.Popen(query, shell=True, stdout=sub.PIPE) as proc:
         outp, _ = proc.communicate()
+    infodict = OrderedDict()
     for line in outp.decode().split('\n'):
         if len(line) > 0:
             fpath, line, text = line.split(':', maxsplit=2)
             fname = os.path.basename(fpath)
             if len(text) > max_len - 3:
                 text = text[:max_len-3] + '...'
-            yield {'file': fname, 'line': line, 'text': text}
+            infodict.setdefault(fname, []).append((line, text))
+    return [make_result(fname, info) for fname, info in infodict.items()]
 
 # input
 def load_file(fpath):

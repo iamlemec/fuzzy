@@ -159,9 +159,11 @@ function ensure_inactive() {
 }
 
 function render_entry(info) {
-    var name = '<span class="res_name">' + info['file'] + ' - ' + info['line'] + '</span>';
-    var text = info['text'];
-    var box = $('<div>', {class: 'res_box', file: info['file'], line: info['line']});
+    var file = info['file'];
+    var num = info['num'];
+    var text = info['text'].join('<br/>');
+    var name = '<span class="res_name">' + file + ' (' + num + ')</span>';
+    var box = $('<div>', {class: 'res_box', file: file, num: num});
     var span = $('<span>', {class: 'res_title', html: name + '<br/>' + text});
     box.append(span);
     box.click(function(event) {
@@ -452,4 +454,3 @@ $(document).ready(function () {
         }
     });
 });
-
