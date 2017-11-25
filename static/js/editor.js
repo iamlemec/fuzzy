@@ -319,7 +319,7 @@ function save_output(box) {
         bod = bod.slice(0, -1);
     }
     if (file == null) {
-        file = tit.toLowerCase().replace(/\W/g, '_');
+        file = tit.toLowerCase().replace(/\W/g, '_').replace(/_{2,}/g, '_');
     }
     send_command('save', {'file': file, 'title': tit, 'tags': tag, 'body': bod});
     set_modified(false);
