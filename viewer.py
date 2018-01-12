@@ -27,7 +27,7 @@ max_res = 100
 max_per = 5
 
 # search tools
-cmd = 'ag --nobreak --noheading ".+" "%(path)s" | fzf -f "%(words)s" | head -n %(max_res)d'
+cmd = 'ag --follow --nobreak --noheading ".+" "%(path)s" | fzf -f "%(words)s" | head -n %(max_res)d'
 
 # authentication
 if args.auth is not None:
@@ -58,9 +58,9 @@ def validate_path(relpath):
     return (prefix == absbase) and (len(abspath) > len(absbase))
 
 # searching
-def make_result(fname, info):
+def make_result(fpath, info):
     return {
-        'file': fname,
+        'file': fpath,
         'num': len(info),
         'text': [f'{i}: {t}' for i, t in info[:max_per]]
     }
@@ -73,11 +73,10 @@ def search(words, block=True):
     for line in outp.decode().split('\n'):
         if len(line) > 0:
             fpath, line, text = line.split(':', maxsplit=2)
-            fname = os.path.basename(fpath)
             if len(text) > max_len - 3:
                 text = text[:max_len-3] + '...'
-            infodict.setdefault(fname, []).append((line, text))
-    return [make_result(fname, info) for fname, info in infodict.items()]
+            infodict.setdefault(fpath, []).append((line, text))
+    return [make_result(fpath, info) for fpath, info in infodict.items()]
 
 # input
 def load_file(fpath):
