@@ -28,6 +28,7 @@ max_per = 5
 
 # search tools
 cmd = 'ag --follow --nobreak --noheading ".+" "%(path)s" | fzf -f "%(words)s" | head -n %(max_res)d'
+npath = os.path.normpath(args.path)
 
 # authentication
 if args.auth is not None:
@@ -73,6 +74,8 @@ def search(words, block=True):
     for line in outp.decode().split('\n'):
         if len(line) > 0:
             fpath, line, text = line.split(':', maxsplit=2)
+            if fpath.startswith(npath):
+                fpath = fpath[len(npath)+1:]
             if len(text) > max_len - 3:
                 text = text[:max_len-3] + '...'
             infodict.setdefault(fpath, []).append((line, text))
