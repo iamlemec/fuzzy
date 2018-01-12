@@ -27,7 +27,7 @@ max_res = 100
 max_per = 5
 
 # search tools
-cmd = 'ag --nobreak --noheading --depth=0 ".+" "%(path)s" | fzf -f "%(words)s" | head -n %(max_res)d'
+cmd = 'ag --nobreak --noheading ".+" "%(path)s" | fzf -f "%(words)s" | head -n %(max_res)d'
 
 # authentication
 if args.auth is not None:
