@@ -134,6 +134,7 @@ body {
 .res_name {
     padding-right: 3px;
     font-weight: bold;
+    overflow-wrap: break-word;
 }
 
 .tag_box {
