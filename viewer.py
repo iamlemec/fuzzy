@@ -89,6 +89,7 @@ def load_file(fpath):
             tags = [s[1:] for s in tags.split() if s.startswith(args.tag)]
         else:
             body = rest
+            tags = []
         body = body[1:] if body.startswith('\n') else body
     else:
         head, body = bsplit(text[1:])
