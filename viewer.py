@@ -16,7 +16,8 @@ parser.add_argument('--path', type=str, help='location of files')
 parser.add_argument('--ip', type=str, default='127.0.0.1', help='ip address to listen on')
 parser.add_argument('--port', type=int, default=9020, help='port to serve on')
 parser.add_argument('--tag', type=str, default='#', help='tag indicator')
-parser.add_argument('--sep', type=bool, default=False, help='put tags on next line')
+parser.add_argument('--sep', action='store_true', help='put tags on next line')
+parser.add_argument('--edit', action='store_true', help='enable editing mode (experimental)')
 parser.add_argument('--auth', type=str, default=None)
 args = parser.parse_args()
 
@@ -28,7 +29,7 @@ max_per = 5
 
 # search tools
 cmd = 'ag --follow --nobreak --noheading ".+" "%(path)s" | fzf -f "%(words)s" | head -n %(max_res)d'
-npath = os.path.normpath(args.path)
+normpath = os.path.normpath(args.path)
 
 # authentication
 if args.auth is not None:
@@ -40,7 +41,6 @@ if args.auth is not None:
     def authenticated(get0):
         def get1(self, *args):
             current_user = self.get_secure_cookie('user')
-            print(current_user)
             if not current_user:
                 self.redirect('/login/')
                 return
@@ -53,7 +53,7 @@ else:
 
 # utils
 def validate_path(relpath):
-    absbase = os.path.abspath(args.path)
+    absbase = os.path.abspath(normpath)
     abspath = os.path.abspath(os.path.join(absbase, relpath))
     prefix = os.path.normpath(os.path.commonprefix([abspath, absbase]))
     return (prefix == absbase) and (len(abspath) > len(absbase))
@@ -67,19 +67,20 @@ def make_result(fpath, info):
     }
 
 def search(words, block=True):
-    query = cmd % dict(path=args.path, words=words, max_res=max_res)
+    query = cmd % dict(path=normpath, words=words, max_res=max_res)
     with sub.Popen(query, shell=True, stdout=sub.PIPE) as proc:
         outp, _ = proc.communicate()
     infodict = OrderedDict()
     for line in outp.decode().split('\n'):
         if len(line) > 0:
             fpath, line, text = line.split(':', maxsplit=2)
-            if fpath.startswith(npath):
-                fpath = fpath[len(npath)+1:]
+            if not validate_path(fpath):
+                continue
+            frela = os.path.relpath(fpath, normpath)
             if len(text) > max_len - 3:
                 text = text[:max_len-3] + '...'
-            infodict.setdefault(fpath, []).append((line, text))
-    return [make_result(fpath, info) for fpath, info in infodict.items()]
+            infodict.setdefault(frela, []).append((line, text))
+    return [make_result(frela, info) for frela, info in infodict.items()]
 
 # input
 def load_file(fpath):
@@ -108,7 +109,7 @@ def save_file(fname, info):
     text = '!' + info['title'] + ' ' + tags + '\n\n' + info['body']
 
     tpath = os.path.join(tmp_dir, fname)
-    fpath = os.path.join(args.path, fname)
+    fpath = os.path.join(normpath, fname)
 
     fid = open(tpath, 'w+')
     fid.write(text)
@@ -117,7 +118,7 @@ def save_file(fname, info):
 
 def delete_file(fname):
     if validate_path(fname):
-        fpath = os.path.join(args.path, fname)
+        fpath = os.path.join(normpath, fname)
         os.remove(fpath)
     else:
         print('Invalid path: %s' % fname)
@@ -169,7 +170,7 @@ class AuthLogoutHandler(tornado.web.RequestHandler):
 class EditorHandler(tornado.web.RequestHandler):
     @authenticated
     def get(self):
-        self.render('editor.html')
+        self.render('editor.html', editing=args.edit)
 
 class FuzzyHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
@@ -199,6 +200,7 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
     def on_message(self, msg):
         data = json.loads(msg)
         (cmd, cont) = (data['cmd'], data['content'])
+
         if cmd == 'query':
             try:
                 print('Query: %s' % cont)
@@ -210,13 +212,16 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
         elif cmd == 'text':
             try:
                 print('Loading: %s' % cont)
-                fpath = os.path.join(args.path, cont)
+                fpath = os.path.join(normpath, cont)
                 info = load_file(fpath)
                 self.write_json({'cmd': 'text', 'content': dict(file=cont, **info)})
             except Exception as e:
                 print(e)
                 print(traceback.format_exc())
         elif cmd == 'save':
+            if not args.edit:
+                print('Edit attempt in read-only mode!')
+                return
             try:
                 fname = cont.pop('file')
                 print('Saving: %s' % fname)
@@ -225,6 +230,9 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
                 print(e)
                 print(traceback.format_exc())
         elif cmd == 'delete':
+            if not args.edit:
+                print('Edit attempt in read-only mode!')
+                return
             try:
                 fname = cont['file']
                 print('Delete: %s' % fname)

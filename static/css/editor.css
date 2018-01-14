@@ -180,7 +180,7 @@ body {
     width: 17px;
 }
 
-#fuzzy.active #delbox {
+#fuzzy.active.editing #delbox {
     visibility: visible;
 }
 
@@ -189,6 +189,7 @@ body {
 }
 
 #newdoc {
+    visibility: hidden;
     cursor: default;
     background-color: #4284F2;
     border-radius: 3px;
@@ -201,6 +202,10 @@ body {
     padding-left: 1px;
     font-weight: bold;
     color: white;
+}
+
+#fuzzy.editing #newdoc {
+    visibility: visible;
 }
 
 /* body language */

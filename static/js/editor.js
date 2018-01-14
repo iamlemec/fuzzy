@@ -138,7 +138,7 @@ function set_modified(mod) {
 }
 
 function ensure_active() {
-    if (!active) {
+    if (!active && editing) {
         title.attr('contentEditable', true);
         body.attr('contentEditable', true);
         fuzzy.addClass('active');
@@ -147,7 +147,7 @@ function ensure_active() {
 }
 
 function ensure_inactive() {
-    if (active) {
+    if (active && editing) {
         title.empty();
         tags.empty();
         body.empty();
@@ -178,11 +178,13 @@ function render_tag(label) {
     var tag = $('<span>', {class: 'tag_box'});
     tag.append(lab);
     tag.append(del);
-    del.click(function(event) {
-        tag.remove();
-        set_modified(true);
-        body.focus();
-    });
+    if (editing) {
+        del.click(function(event) {
+            tag.remove();
+            set_modified(true);
+            body.focus();
+        });
+    }
     return tag;
 }
 
@@ -340,12 +342,14 @@ $(document).ready(function () {
     // global states
     file = null;
     active = false;
+    editing = fuzzy.hasClass('editing');
 
+    // connect handlers
     connect();
     query.focus();
 
     query.keypress(function(event) {
-        if (event.keyCode == 13) {
+        if (event.keyCode == 13) { // return
             var text = query.val();
             send_command('query', text);
             event.preventDefault();
@@ -383,7 +387,7 @@ $(document).ready(function () {
             if (active) {
                 create_tag();
             }
-        } else if (event.keyCode == 27) {
+        } else if (event.keyCode == 27) { // escape
             if (is_modified()) {
                 revert();
             }
@@ -391,30 +395,36 @@ $(document).ready(function () {
     });
 
     title.keydown(function(event) {
-        if (event.keyCode == 13) {
+        if (event.keyCode == 13) { // return
             if (!event.shiftKey && !event.metaKey) {
-                event.preventDefault();
+                return false;
             }
-        } else if ((event.keyCode == 40) || ((event.keyCode == 39) && is_caret_at_end(title[0]))) {
+        } else if ((event.keyCode == 40) || ((event.keyCode == 39) && is_caret_at_end(title[0]))) { // down/right
             set_caret_at_beg(body[0]);
-            event.preventDefault();
+            return false;
         }
     });
 
     body.keydown(function(event) {
-        if ((event.keyCode == 37) && is_caret_at_beg(body[0])) {
+        if ((event.keyCode == 37) && is_caret_at_beg(body[0])) { // left
             set_caret_at_end(title[0]);
             output[0].scrollTop = 0;
-            event.preventDefault();
-        } else if ((event.keyCode == 38) && is_caret_at_beg(body[0])) {
+            return false;
+        } else if ((event.keyCode == 38) && is_caret_at_beg(body[0])) { // right
             set_caret_at_beg(title[0]);
             output[0].scrollTop = 0;
-            event.preventDefault();
+            return false;
+        } else if (!event.metaKey) {
+            if (!(active && editing)) {
+                return false;
+            }
         }
     });
 
     output.bind('input', function() {
-        set_modified(true);
+        if (active && editing) {
+            set_modified(true);
+        }
     });
 
     $(document).unbind('keydown').bind('keydown', function(event) {
@@ -423,14 +433,12 @@ $(document).ready(function () {
                 console.log('rejecting editing key: ', event.target.tagName.toLowerCase());
                 event.preventDefault();
             }
-        } else if (event.keyCode == 9) {
-            if (event.target.getAttribute('contentEditable')) {
-                query.focus();
-                event.preventDefault();
-            }
         }
-        if ((event.keyCode == 38) || (event.keyCode == 40)) {
-            if (!event.target.getAttribute('contentEditable')) {
+        if (event.target.id == 'query') {
+            if (!editing && (event.keyCode == 9)) {
+                return false;
+            }
+            if ((event.keyCode == 38) || (event.keyCode == 40)) {
                 var box = $('.res_box.selected');
                 var other;
                 if (event.keyCode == 40) { // down
@@ -439,7 +447,7 @@ $(document).ready(function () {
                     } else {
                         other = box.next();
                     }
-                } else { // up
+                } else if (event.keyCode == 38) { // up
                     if (box.length == 0) {
                         return;
                     } else {
@@ -449,8 +457,21 @@ $(document).ready(function () {
                 if (other.length > 0) {
                     select_entry(other);
                 }
-                event.preventDefault();
+                return false;
+            } else if (event.keyCode == 33) { // pgup
+                output.stop(true, true);
+                output.animate({ scrollTop: output.scrollTop() - 300 }, 200);
+                return false;
+            } else if (event.keyCode == 34) { // pgdn
+                output.stop(true, true);
+                output.animate({ scrollTop: output.scrollTop() + 300 }, 200);
+                return false;
             }
         }
+    });
+
+    $(document).unbind('click').bind('click', function(event) {
+        query.focus();
+        return false;
     });
 });
