@@ -224,7 +224,7 @@ function create_tag(box) {
             lab.attr('contentEditable', 'false');
             body.focus();
             if (!event.metaKey) {
-                event.preventDefault();
+                return false;
             }
         }
     });
@@ -352,7 +352,7 @@ $(document).ready(function () {
         if (event.keyCode == 13) { // return
             var text = query.val();
             send_command('query', text);
-            event.preventDefault();
+            return false;
         }
     });
 
@@ -382,7 +382,7 @@ $(document).ready(function () {
             if (is_modified()) {
                 save_output();
             }
-            event.preventDefault();
+            return false;
         } else if (((event.keyCode == 10) || (event.keyCode == 13)) && event.metaKey) { // control + return
             if (active) {
                 create_tag();
@@ -399,7 +399,7 @@ $(document).ready(function () {
             if (!event.shiftKey && !event.metaKey) {
                 return false;
             }
-        } else if ((event.keyCode == 40) || ((event.keyCode == 39) && is_caret_at_end(title[0]))) { // down/right
+        } else if ((event.keyCode == 34) || (event.keyCode == 40) || ((event.keyCode == 39) && is_caret_at_end(title[0]))) { // pgdn/down/right
             set_caret_at_beg(body[0]);
             return false;
         }
@@ -410,7 +410,7 @@ $(document).ready(function () {
             set_caret_at_end(title[0]);
             output[0].scrollTop = 0;
             return false;
-        } else if ((event.keyCode == 38) && is_caret_at_beg(body[0])) { // right
+        } else if (((event.keyCode == 33) || (event.keyCode == 38)) && is_caret_at_beg(body[0])) { // pgup/up
             set_caret_at_beg(title[0]);
             output[0].scrollTop = 0;
             return false;
@@ -431,7 +431,7 @@ $(document).ready(function () {
         if (event.keyCode == 8) {
             if (!is_editable(event.target)) {
                 console.log('rejecting editing key: ', event.target.tagName.toLowerCase());
-                event.preventDefault();
+                return false;
             }
         }
         if (event.target.id == 'query') {
@@ -465,6 +465,11 @@ $(document).ready(function () {
             } else if (event.keyCode == 34) { // pgdn
                 output.stop(true, true);
                 output.animate({ scrollTop: output.scrollTop() + 300 }, 200);
+                return false;
+            }
+        } else {
+            if (event.keyCode == 9) {
+                query.focus();
                 return false;
             }
         }
