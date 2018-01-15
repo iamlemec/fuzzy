@@ -476,7 +476,9 @@ $(document).ready(function () {
     });
 
     $(document).unbind('click').bind('click', function(event) {
-        query.focus();
-        return false;
+        if (!(editing && active)) {
+            query.focus();
+            return false;
+        }
     });
 });
