@@ -383,13 +383,9 @@ $(document).ready(function () {
                 save_output();
             }
             return false;
-        } else if (((event.keyCode == 10) || (event.keyCode == 13)) && event.metaKey) { // control + return
+        } else if (((event.keyCode == 10) || (event.keyCode == 13)) && event.ctrlKey) { // control + return
             if (active) {
                 create_tag();
-            }
-        } else if (event.keyCode == 27) { // escape
-            if (is_modified()) {
-                revert();
             }
         }
     });
@@ -414,7 +410,7 @@ $(document).ready(function () {
             set_caret_at_beg(title[0]);
             output[0].scrollTop = 0;
             return false;
-        } else if (!event.metaKey) {
+        } else if (!event.ctrlKey) {
             if (!(active && editing)) {
                 return false;
             }
