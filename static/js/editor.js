@@ -168,6 +168,7 @@ function render_entry(info) {
     box.append(span);
     box.click(function(event) {
         select_entry(box);
+        return false;
     });
     return box;
 }
@@ -204,10 +205,7 @@ function render_output(info) {
         tags.append(render_tag(s));
         tags.append(' ');
     });
-    body.empty();
-    $(info['body'].split('\n')).each(function(i, s) {
-        body.append($('<div>', {text: s}));
-    });
+    body.val(info['body']).trigger('input');
 }
 
 function create_tag(box) {
@@ -316,7 +314,7 @@ function disconnect()
 function save_output(box) {
     var tit = title.text();
     var tag = tags.find('.tag_lab').map(function(i, t) { return t.innerHTML; } ).toArray();
-    var bod = strip_tags(body.html());
+    var bod = body.val();
     if (bod.endsWith('\n')) {
         bod = bod.slice(0, -1);
     }
@@ -343,6 +341,9 @@ $(document).ready(function () {
     file = null;
     active = false;
     editing = fuzzy.hasClass('editing');
+
+    // autoresize
+    body.textareaAutoSize();
 
     // connect handlers
     connect();
@@ -396,19 +397,24 @@ $(document).ready(function () {
                 return false;
             }
         } else if ((event.keyCode == 34) || (event.keyCode == 40) || ((event.keyCode == 39) && is_caret_at_end(title[0]))) { // pgdn/down/right
-            set_caret_at_beg(body[0]);
+            body[0].focus();
+            body[0].setSelectionRange(0,0);
+            output.scrollTop(0);
             return false;
         }
     });
 
     body.keydown(function(event) {
-        if ((event.keyCode == 37) && is_caret_at_beg(body[0])) { // left
+        if ((event.keyCode == 37) && (body.prop('selectionStart') == 0)) { // left
             set_caret_at_end(title[0]);
-            output[0].scrollTop = 0;
+            output.scrollTop(0);
             return false;
-        } else if (((event.keyCode == 33) || (event.keyCode == 38)) && is_caret_at_beg(body[0])) { // pgup/up
+        } else if (((event.keyCode == 33) || (event.keyCode == 38)) && (body.prop('selectionStart') == 0)) { // pgup/up
             set_caret_at_beg(title[0]);
-            output[0].scrollTop = 0;
+            output.scrollTop(0);
+            return false;
+        } else if ((event.keyCode == 40) && (body.prop('selectionStart') == body.val().length)) {
+            output.scrollTop(output.prop('scrollHeight')-output.height());
             return false;
         } else if (!event.ctrlKey) {
             if (!(active && editing)) {

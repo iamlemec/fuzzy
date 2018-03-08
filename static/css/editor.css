@@ -74,8 +74,6 @@ body {
 }
 
 #output {
-    display: flex;
-    flex-direction: column;
     background: #070908;
     overflow-y: scroll;
     margin: 0px;
@@ -175,9 +173,14 @@ body {
     top: 6px;
     font-size: 15px;
     font-weight: bold;
-    padding-left: 2px;
     height: 17px;
     width: 17px;
+}
+
+#delbox > img {
+    width: 17px;
+    height: 17px;
+    padding: 3px;
 }
 
 #fuzzy.active.editing #delbox {
@@ -210,9 +213,19 @@ body {
 
 /* body language */
 
-#body > div {
+#body {
+    min-height: 420px;
+    box-sizing: border-box;
+    overflow-y: hidden;
+    width: 100%;
+    border: 0;
+    outline: 0;
+    padding: 0;
+    resize: none;
+    background: #070908;
+    color: #E7F3FD;
     font-size: 16px;
-    min-height: 18px;
+    font-family: 'Source Sans Pro', serif;
 }
 
 /* theme */

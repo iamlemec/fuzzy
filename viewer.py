@@ -17,6 +17,7 @@ parser.add_argument('--ip', type=str, default='127.0.0.1', help='ip address to l
 parser.add_argument('--port', type=int, default=9020, help='port to serve on')
 parser.add_argument('--tag', type=str, default='#', help='tag indicator')
 parser.add_argument('--sep', action='store_true', help='put tags on next line')
+parser.add_argument('--head', type=str, default='!', help='header indicator (on write)')
 parser.add_argument('--edit', action='store_true', help='enable editing mode (experimental)')
 parser.add_argument('--auth', type=str, default=None)
 args = parser.parse_args()
@@ -96,7 +97,11 @@ def load_file(fpath):
             tags = []
         body = body[1:] if body.startswith('\n') else body
     else:
-        head, body = bsplit(text[1:])
+        if text.startswith('#!'):
+            text = text[2:].lstrip()
+        else:
+            text = text[1:].lstrip()
+        head, body = bsplit(text)
         head = head.split()
         title = ' '.join([s for s in head if not s.startswith(args.tag)])
         tags = [s[1:] for s in head if s.startswith(args.tag)]
@@ -106,9 +111,10 @@ def load_file(fpath):
 # output
 def save_file(fname, info):
     tags = ' '.join([args.tag + t for t in info['tags']])
-    text = '!' + info['title'] + ' ' + tags + '\n\n' + info['body']
+    text = args.head + ' ' + info['title'] + ' ' + tags + '\n\n' + info['body']
 
-    tpath = os.path.join(tmp_dir, fname)
+    fbase = os.path.basename(fname)
+    tpath = os.path.join(tmp_dir, fbase)
     fpath = os.path.join(normpath, fname)
 
     fid = open(tpath, 'w+')
@@ -175,7 +181,6 @@ class EditorHandler(tornado.web.RequestHandler):
 class FuzzyHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
         print('initializing')
-        self.results = None
 
     def allow_draft76(self):
         return True
