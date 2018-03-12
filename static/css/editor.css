@@ -197,14 +197,19 @@ body {
     background-color: #4284F2;
     border-radius: 3px;
     position: absolute;
-    right: 7px;
+    right: 6px;
     top: 6px;
     height: 17px;
     width: 17px;
-    font-size: 14px;
-    padding-left: 1px;
+    font-size: 15px;
     font-weight: bold;
     color: white;
+}
+
+#newdoc > img {
+    width: 17px;
+    height: 17px;
+    padding: 3px;
 }
 
 #fuzzy.editing #newdoc {
