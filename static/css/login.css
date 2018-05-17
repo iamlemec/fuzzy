@@ -2,6 +2,7 @@
 
 * {
     font-family: Montserrat;
+    box-sizing: border-box;
 }
 
 .title {
@@ -35,7 +36,11 @@
 }
 
 .errbox {
-    height: 16px;
+    padding: 10px;
+}
+
+.errmsg {
+    color: red;
 }
 
 #form_btn {
@@ -75,4 +80,3 @@
     font-family: courier;
     line-height: 150%;
 }
-

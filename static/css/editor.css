@@ -152,11 +152,15 @@ body {
 }
 
 .tag_del {
-    color: #e8325a;
-    padding-left: 3px;
-    padding-right: 5px;
-    padding-top: 3px;
-    font-size: 13px;
+}
+
+.tag_del > img {
+    height: 9px;
+    width: 9px;
+    margin-top: 1px;
+    margin-bottom: 0px;
+    margin-left: 3px;
+    margin-right: 5px;
 }
 
 .tag_box.selected {

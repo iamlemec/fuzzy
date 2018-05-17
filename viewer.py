@@ -109,18 +109,25 @@ def load_file(fpath):
     return {'title': title, 'tags': tags, 'body': body}
 
 # output
-def save_file(fname, info):
+def save_file(fpath0, info):
     tags = ' '.join([args.tag + t for t in info['tags']])
     text = args.head + ' ' + info['title'] + ' ' + tags + '\n\n' + info['body']
 
-    fbase = os.path.basename(fname)
-    tpath = os.path.join(tmp_dir, fbase)
-    fpath = os.path.join(normpath, fname)
+    rpath, fname0 = os.path.split(fpath0)
+    fname = fname0
+    fdest = os.path.join(normpath, rpath, fname)
+    idx = 0
+    while os.path.exists(fdest):
+        idx += 1
+        tag = '' if idx == 0 else f'_{idx}'
+        fname = fname0 + tag
+        fdest = os.path.join(normpath, rpath, fname)
+    tpath = os.path.join(tmp_dir, rpath, fname)
 
     fid = open(tpath, 'w+')
     fid.write(text)
     fid.close()
-    shutil.move(tpath, fpath)
+    shutil.move(tpath, fdest)
 
 def delete_file(fname):
     if validate_path(fname):
