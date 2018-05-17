@@ -116,12 +116,15 @@ def save_file(fpath0, info):
     rpath, fname0 = os.path.split(fpath0)
     fname = fname0
     fdest = os.path.join(normpath, rpath, fname)
-    idx = 0
-    while os.path.exists(fdest):
-        idx += 1
-        tag = '' if idx == 0 else f'_{idx}'
-        fname = fname0 + tag
-        fdest = os.path.join(normpath, rpath, fname)
+
+    if info['create']:
+        idx = 0
+        while os.path.exists(fdest):
+            idx += 1
+            tag = '' if idx == 0 else f'_{idx}'
+            fname = fname0 + tag
+            fdest = os.path.join(normpath, rpath, fname)
+
     tpath = os.path.join(tmp_dir, rpath, fname)
 
     fid = open(tpath, 'w+')

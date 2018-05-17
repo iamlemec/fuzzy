@@ -150,10 +150,12 @@ function ensure_inactive() {
     if (active && editing) {
         title.empty();
         tags.empty();
-        body.empty();
+        body.val("");
         title.attr('contentEditable', false);
         body.attr('contentEditable', false);
         fuzzy.removeClass('active');
+        fuzzy.removeClass('modified');
+        fuzzy.removeClass('create');
         active = false;
     }
 }
@@ -255,6 +257,7 @@ function create_websocket(first_time) {
                 render_output(cont);
                 file = cont['file'];
                 set_modified(false);
+                fuzzy.removeClass('create');
                 scroll_top();
             }
         }
@@ -323,8 +326,10 @@ function save_output(box) {
     if (file == null) {
         file = tit.toLowerCase().replace(/\W/g, '_').replace(/_{2,}/g, '_');
     }
-    send_command('save', {'file': file, 'title': tit, 'tags': tag, 'body': bod});
+    var create = fuzzy.hasClass('create');
+    send_command('save', {'file': file, 'title': tit, 'tags': tag, 'body': bod, 'create': create});
     set_modified(false);
+    fuzzy.removeClass('create');
 }
 
 $(document).ready(function () {
@@ -369,6 +374,7 @@ $(document).ready(function () {
         });
         select_all(title[0]);
         set_modified(true);
+        fuzzy.addClass('create');
     });
 
     delbox.click(function(event) {
