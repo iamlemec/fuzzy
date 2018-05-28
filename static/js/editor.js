@@ -1,13 +1,4 @@
-// Why!?!
-Array.prototype.contains = function(obj) {
-    var i = this.length;
-    while (i--) {
-        if (this[i] === obj) {
-            return true;
-        }
-    }
-    return false;
-}
+/* fuzzy editor */
 
 // escaping
 function strip_tags(html) {
@@ -20,6 +11,7 @@ function strip_tags(html) {
                .replace(/&amp;/g, '&');
 };
 
+// tools
 function is_editable(element) {
     return (event.target.getAttribute('contentEditable') || (event.target.tagName.toLowerCase() == 'input'));
 }
