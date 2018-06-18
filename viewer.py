@@ -19,6 +19,7 @@ parser.add_argument('--tag', type=str, default='#', help='tag indicator')
 parser.add_argument('--sep', action='store_true', help='put tags on next line')
 parser.add_argument('--head', type=str, default='!', help='header indicator (on write)')
 parser.add_argument('--edit', action='store_true', help='enable editing mode (experimental)')
+parser.add_argument('--demo', action='store_true', help='enable demo mode')
 parser.add_argument('--auth', type=str, default=None)
 args = parser.parse_args()
 
@@ -43,7 +44,7 @@ if args.auth is not None:
         def get1(self, *args):
             current_user = self.get_secure_cookie('user')
             if not current_user:
-                self.redirect('/login/')
+                self.redirect('/__login/')
                 return
             get0(self, *args)
         return get1
@@ -169,7 +170,7 @@ class AuthLoginHandler(tornado.web.RequestHandler):
             self.redirect('/')
         else:
             error_msg = '?error=' + tornado.escape.url_escape('Login incorrect')
-            self.redirect('/login/' + error_msg)
+            self.redirect('/__login/' + error_msg)
 
     def set_current_user(self, user):
         if user:
@@ -185,8 +186,15 @@ class AuthLogoutHandler(tornado.web.RequestHandler):
 
 class EditorHandler(tornado.web.RequestHandler):
     @authenticated
+    def get(self, subpath):
+        self.render('editor.html', editing=args.edit, subpath=subpath)
+
+class DemoHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render('editor.html', editing=args.edit)
+        drand = rand_hex()
+        fullpath = os.path.join(normpath, drand)
+        os.mkdir(fullpath)
+        self.redirect('/%s' % drand)
 
 class FuzzyHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
@@ -195,8 +203,12 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
     def allow_draft76(self):
         return True
 
-    def open(self):
-        print('connection received')
+    def open(self, subpath):
+        print('connection received: %s' % subpath)
+        self.subpath = subpath
+        self.fullpath = os.path.normpath(os.path.join(normpath, subpath))
+        if not validate_path(self.fullpath) or not os.path.isdir(self.fullpath):
+            self.close(code=401, reason='invalid subpath')
 
     def on_close(self):
         print('connection closing')
@@ -260,10 +272,10 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
 class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r'/', EditorHandler),
-            (r'/fuzzy', FuzzyHandler),
-            (r'/login/?', AuthLoginHandler),
-            (r'/logout/?', AuthLogoutHandler)
+            (r'/__fuzzy/(.*)', FuzzyHandler),
+            (r'/__login/?', AuthLoginHandler),
+            (r'/__logout/?', AuthLogoutHandler),
+            (r'/(.*)/?', EditorHandler)
         ]
         settings = dict(
             app_name='Fuzzy Editor',

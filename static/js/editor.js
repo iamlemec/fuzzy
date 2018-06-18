@@ -256,10 +256,12 @@ function create_websocket(first_time) {
     };
 
     ws.onclose = function() {
+        /*
         console.log('websocket closed, attempting to reconnect');
         setTimeout(function() {
             create_websocket(false);
         }, 1);
+        */
     };
 }
 
@@ -269,7 +271,7 @@ function connect()
         WebSocket = MozWebSocket;
     }
     if ('WebSocket' in window) {
-        ws_con = 'ws://' + window.location.host + '/fuzzy';
+        ws_con = 'ws://' + window.location.host + '/__fuzzy/' + subpath;
         console.log(ws_con);
         create_websocket(true);
     } else {
@@ -279,32 +281,8 @@ function connect()
 
 function disconnect()
 {
-    ws.onclose = function() {
-        console.log('websocket closed, attempting to reconnect');
-        setTimeout(function() {
-            create_websocket(false);
-        }, 1);
-    };
-}
-
-function connect()
-{
-    if ('MozWebSocket' in window) {
-        WebSocket = MozWebSocket;
-    }
-    if ('WebSocket' in window) {
-        ws_con = 'ws://' + window.location.host + '/fuzzy';
-        console.log(ws_con);
-        create_websocket(true);
-    } else {
-        console.log('Sorry, your browser does not support websockets.');
-    }
-}
-
-function disconnect()
-{
-    if (ws) {
-        ws.close();
+    if (ws_con) {
+        ws_con.close();
     }
 }
 
