@@ -75,8 +75,8 @@ def make_result(fpath, info):
         'text': [f'{i}: {t}' for i, t in info[:max_per]]
     }
 
-def search(words, block=True):
-    query = cmd % dict(path=normpath, words=words, max_res=max_res)
+def search(words, subpath, block=True):
+    query = cmd % dict(path=subpath, words=words, max_res=max_res)
     with sub.Popen(query, shell=True, stdout=sub.PIPE) as proc:
         outp, _ = proc.communicate()
     infodict = OrderedDict()
@@ -85,14 +85,15 @@ def search(words, block=True):
             fpath, line, text = line.split(':', maxsplit=2)
             if not validate_path(fpath):
                 continue
-            frela = os.path.relpath(fpath, normpath)
+            frela = os.path.relpath(fpath, subpath)
             if len(text) > max_len - 3:
                 text = text[:max_len-3] + '...'
             infodict.setdefault(frela, []).append((line, text))
     return [make_result(frela, info) for frela, info in infodict.items()]
 
 # input
-def load_file(fpath):
+def load_file(frela, subpath):
+    fpath = os.path.join(subpath, frela)
     with open(fpath) as fid:
         text = fid.read()
     if args.sep:
@@ -117,13 +118,13 @@ def load_file(fpath):
     return {'title': title, 'tags': tags, 'body': body}
 
 # output
-def save_file(fpath0, info):
+def save_file(fpath0, info, subpath):
     tags = ' '.join([args.tag + t for t in info['tags']])
     text = args.head + ' ' + info['title'] + ' ' + tags + '\n\n' + info['body']
 
     rpath, fname0 = os.path.split(fpath0)
     fname = fname0
-    fdest = os.path.join(normpath, rpath, fname)
+    fdest = os.path.join(subpath, rpath, fname)
 
     if info['create']:
         idx = 0
@@ -131,18 +132,19 @@ def save_file(fpath0, info):
             idx += 1
             tag = '' if idx == 0 else f'_{idx}'
             fname = fname0 + tag
-            fdest = os.path.join(normpath, rpath, fname)
+            fdest = os.path.join(subpath, rpath, fname)
 
-    tpath = os.path.join(tmp_dir, rpath, fname)
+    tname = rand_hex()
+    tpath = os.path.join(tmp_dir, tname)
 
     fid = open(tpath, 'w+')
     fid.write(text)
     fid.close()
     shutil.move(tpath, fdest)
 
-def delete_file(fname):
+def delete_file(fname, subpath):
     if validate_path(fname) and not os.path.isdir(fname):
-        fpath = os.path.join(normpath, fname)
+        fpath = os.path.join(subpath, fname)
         os.remove(fpath)
     else:
         print('Invalid path: %s' % fname)
@@ -243,7 +245,7 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
         if cmd == 'query':
             try:
                 print('Query: %s' % cont)
-                ret = list(search(cont))
+                ret = list(search(cont, self.fullpath))
                 self.write_json({'cmd': 'results', 'content': ret})
             except Exception as e:
                 print(e)
@@ -251,8 +253,7 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
         elif cmd == 'text':
             try:
                 print('Loading: %s' % cont)
-                fpath = os.path.join(normpath, cont)
-                info = load_file(fpath)
+                info = load_file(cont, self.fullpath)
                 self.write_json({'cmd': 'text', 'content': dict(file=cont, **info)})
             except Exception as e:
                 print(e)
@@ -264,7 +265,7 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
             try:
                 fname = cont.pop('file')
                 print('Saving: %s' % fname)
-                save_file(fname, cont)
+                save_file(fname, cont, self.fullpath)
             except Exception as e:
                 print(e)
                 print(traceback.format_exc())
@@ -275,7 +276,7 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
             try:
                 fname = cont['file']
                 print('Delete: %s' % fname)
-                delete_file(fname)
+                delete_file(fname, self.fullpath)
             except Exception as e:
                 print(e)
                 print(traceback.format_exc())
