@@ -79,23 +79,23 @@ def search(words, subpath, block=True):
     query = cmd % dict(path=subpath, words=words, max_res=max_res)
     with sub.Popen(query, shell=True, stdout=sub.PIPE) as proc:
         outp, _ = proc.communicate()
+
     infodict = OrderedDict()
     for line in outp.decode().split('\n'):
         if len(line) > 0:
             fpath, line, text = line.split(':', maxsplit=2)
-            if not validate_path(fpath):
-                continue
             frela = os.path.relpath(fpath, subpath)
             if len(text) > max_len - 3:
                 text = text[:max_len-3] + '...'
             infodict.setdefault(frela, []).append((line, text))
+
     return [make_result(frela, info) for frela, info in infodict.items()]
 
 # input
-def load_file(frela, subpath):
-    fpath = os.path.join(subpath, frela)
+def load_file(fpath):
     with open(fpath) as fid:
         text = fid.read()
+
     if args.sep:
         title, rest = bsplit(text)
         if rest.lstrip().startswith(args.tag):
@@ -115,16 +115,17 @@ def load_file(frela, subpath):
         title = ' '.join([s for s in head if not s.startswith(args.tag)])
         tags = [s[1:] for s in head if s.startswith(args.tag)]
         body = body[1:] if body.startswith('\n') else body
+
     return {'title': title, 'tags': tags, 'body': body}
 
 # output
-def save_file(fpath0, info, subpath):
+def save_file(fpath0, info):
     tags = ' '.join([args.tag + t for t in info['tags']])
     text = args.head + ' ' + info['title'] + ' ' + tags + '\n\n' + info['body']
 
     rpath, fname0 = os.path.split(fpath0)
     fname = fname0
-    fdest = os.path.join(subpath, rpath, fname)
+    fdest = fpath0
 
     if info['create']:
         idx = 0
@@ -132,7 +133,7 @@ def save_file(fpath0, info, subpath):
             idx += 1
             tag = '' if idx == 0 else f'_{idx}'
             fname = fname0 + tag
-            fdest = os.path.join(subpath, rpath, fname)
+            fdest = os.path.join(rpath, fname)
 
     tname = rand_hex()
     tpath = os.path.join(tmp_dir, tname)
@@ -142,12 +143,11 @@ def save_file(fpath0, info, subpath):
     fid.close()
     shutil.move(tpath, fdest)
 
-def delete_file(fname, subpath):
-    if validate_path(fname) and not os.path.isdir(fname):
-        fpath = os.path.join(subpath, fname)
+def delete_file(fpath):
+    if not os.path.isdir(fpath):
         os.remove(fpath)
     else:
-        print('Invalid path: %s' % fname)
+        print('Cannot remove directory: %s' % fpath)
 
 # text tools
 def bsplit(s, sep='\n'):
@@ -239,47 +239,46 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
 
     @authenticated
     def on_message(self, msg):
-        data = json.loads(msg)
-        cmd, cont = data['cmd'], data['content']
+        try:
+            data = json.loads(msg)
+            cmd, cont = data['cmd'], data['content']
 
-        if cmd == 'query':
-            try:
+            if cmd == 'query':
                 print('Query: %s' % cont)
                 ret = list(search(cont, self.fullpath))
                 self.write_json({'cmd': 'results', 'content': ret})
-            except Exception as e:
-                print(e)
-                print(traceback.format_exc())
-        elif cmd == 'text':
-            try:
+            elif cmd == 'text':
                 print('Loading: %s' % cont)
-                info = load_file(cont, self.fullpath)
-                self.write_json({'cmd': 'text', 'content': dict(file=cont, **info)})
-            except Exception as e:
-                print(e)
-                print(traceback.format_exc())
-        elif cmd == 'save':
-            if not args.edit:
-                print('Edit attempt in read-only mode!')
-                return
-            try:
-                fname = cont.pop('file')
-                print('Saving: %s' % fname)
-                save_file(fname, cont, self.fullpath)
-            except Exception as e:
-                print(e)
-                print(traceback.format_exc())
-        elif cmd == 'delete':
-            if not args.edit:
-                print('Edit attempt in read-only mode!')
-                return
-            try:
+                fpath = os.path.join(self.fullpath, cont)
+                if validate_path(fpath):
+                    info = load_file(fpath)
+                    self.write_json({'cmd': 'text', 'content': dict(file=cont, **info)})
+                else:
+                    print('Invalid load path: %s' % fpath)
+            elif cmd == 'save':
                 fname = cont['file']
-                print('Delete: %s' % fname)
-                delete_file(fname, self.fullpath)
-            except Exception as e:
-                print(e)
-                print(traceback.format_exc())
+                print('Saving: %s' % fname)
+                if args.edit:
+                    fpath = os.path.join(self.fullpath, fname)
+                    if validate_path(fpath):
+                        save_file(fpath, cont)
+                    else:
+                        print('Invalid save path: %s' % fdest)
+                else:
+                    print('Edit attempt in read-only mode!')
+            elif cmd == 'delete':
+                print('Delete: %s' % cont)
+                if args.edit:
+                    fpath = os.path.join(self.fullpath, cont)
+                    if validate_path(fpath):
+                        delete_file(fpath)
+                    else:
+                        print('Invalid delete path: %s' % fpath)
+                else:
+                    print('Edit attempt in read-only mode!')
+        except Exception as e:
+            print(e)
+            print(traceback.format_exc())
 
 # tornado content handlers
 class Application(tornado.web.Application):

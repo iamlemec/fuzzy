@@ -352,7 +352,7 @@ $(document).ready(function () {
         if (ans) {
             $('.res_box[file=' + file + ']').remove();
             ensure_inactive();
-            send_command('delete', {'file': file});
+            send_command('delete', file);
         }
     });
 
