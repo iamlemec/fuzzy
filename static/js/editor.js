@@ -170,12 +170,12 @@ function render_entry(info) {
 function render_tag(label) {
     var img = $('<img>', {src: '/static/svg/redx.svg'});
     var lab = $('<span>', {class: 'tag_lab', html: label});
-    var del = $('<span>', {class: 'tag_del'});
     var tag = $('<span>', {class: 'tag_box'});
-    del.append(img);
     tag.append(lab);
-    tag.append(del);
     if (editing) {
+        var del = $('<span>', {class: 'tag_del'});
+        del.append(img);
+        tag.append(del);
         del.click(function(event) {
             tag.remove();
             set_modified(true);

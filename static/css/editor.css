@@ -147,7 +147,7 @@ body {
 
 .tag_lab {
     padding-left: 5px;
-    padding-right: 3px;
+    padding-right: 5px;
     font-weight: bold;
 }
 
@@ -159,7 +159,7 @@ body {
     width: 9px;
     margin-top: 1px;
     margin-bottom: 0px;
-    margin-left: 3px;
+    margin-left: 0px;
     margin-right: 5px;
 }
 

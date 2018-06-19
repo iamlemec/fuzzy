@@ -1,5 +1,8 @@
 import os
 import json
+import operator
+import random
+import shutil
 import argparse
 import traceback
 import subprocess as sub
@@ -33,6 +36,9 @@ max_per = 5
 cmd = 'ag --follow --nobreak --noheading ".+" "%(path)s" | fzf -f "%(words)s" | head -n %(max_res)d'
 normpath = os.path.normpath(args.path)
 
+# randomization
+rand_hex = lambda: hex(random.getrandbits(128))[2:].zfill(32)
+
 # authentication
 if args.auth is not None:
     with open(args.auth) as fid:
@@ -54,11 +60,12 @@ else:
         return get0
 
 # utils
-def validate_path(relpath):
+def validate_path(relpath, weak=False):
     absbase = os.path.abspath(normpath)
     abspath = os.path.abspath(os.path.join(absbase, relpath))
     prefix = os.path.normpath(os.path.commonprefix([abspath, absbase]))
-    return (prefix == absbase) and (len(abspath) > len(absbase))
+    op = operator.ge if weak else operator.gt
+    return (prefix == absbase) and op(len(abspath), len(absbase))
 
 # searching
 def make_result(fpath, info):
@@ -134,7 +141,7 @@ def save_file(fpath0, info):
     shutil.move(tpath, fdest)
 
 def delete_file(fname):
-    if validate_path(fname):
+    if validate_path(fname) and not os.path.isdir(fname):
         fpath = os.path.join(normpath, fname)
         os.remove(fpath)
     else:
@@ -194,6 +201,7 @@ class DemoHandler(tornado.web.RequestHandler):
         drand = rand_hex()
         fullpath = os.path.join(normpath, drand)
         os.mkdir(fullpath)
+        shutil.copy(os.path.join('testing', 'testing'), fullpath)
         self.redirect('/%s' % drand)
 
 class FuzzyHandler(tornado.websocket.WebSocketHandler):
@@ -205,9 +213,13 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
 
     def open(self, subpath):
         print('connection received: %s' % subpath)
+        if args.demo and subpath == '':
+            print('cannot do top level in demo')
+            self.close(code=401, reason='no permissions in demo mode')
         self.subpath = subpath
         self.fullpath = os.path.normpath(os.path.join(normpath, subpath))
-        if not validate_path(self.fullpath) or not os.path.isdir(self.fullpath):
+        if not validate_path(self.fullpath, weak=True):
+            print('invalid subpath')
             self.close(code=401, reason='invalid subpath')
 
     def on_close(self):
@@ -226,7 +238,7 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
     @authenticated
     def on_message(self, msg):
         data = json.loads(msg)
-        (cmd, cont) = (data['cmd'], data['content'])
+        cmd, cont = data['cmd'], data['content']
 
         if cmd == 'query':
             try:
@@ -275,8 +287,16 @@ class Application(tornado.web.Application):
             (r'/__fuzzy/(.*)', FuzzyHandler),
             (r'/__login/?', AuthLoginHandler),
             (r'/__logout/?', AuthLogoutHandler),
-            (r'/(.*)/?', EditorHandler)
         ]
+        if args.demo:
+            handlers += [
+                (r'/?', DemoHandler),
+                (r'/(.+)/?', EditorHandler)
+            ]
+        else:
+            handlers += [
+                (r'/(.*)/?', EditorHandler)
+            ]
         settings = dict(
             app_name='Fuzzy Editor',
             template_path='templates',
