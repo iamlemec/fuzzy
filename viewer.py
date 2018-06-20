@@ -22,7 +22,7 @@ parser.add_argument('--tag', type=str, default='#', help='tag indicator')
 parser.add_argument('--sep', action='store_true', help='put tags on next line')
 parser.add_argument('--head', type=str, default='!', help='header indicator (on write)')
 parser.add_argument('--edit', action='store_true', help='enable editing mode (experimental)')
-parser.add_argument('--demo', action='store_true', help='enable demo mode')
+parser.add_argument('--demo', type=str, default=None, help='enable demo mode')
 parser.add_argument('--auth', type=str, default=None)
 args = parser.parse_args()
 
@@ -33,7 +33,7 @@ max_res = 100
 max_per = 5
 
 # search tools
-cmd = 'ag --follow --nobreak --noheading ".+" "%(path)s" | fzf -f "%(words)s" | head -n %(max_res)d'
+cmd = 'ag --follow --nobreak --noheading ".+" | fzf -f "%(words)s" | head -n %(max_res)d'
 normpath = os.path.normpath(args.path)
 
 # randomization
@@ -76,18 +76,17 @@ def make_result(fpath, info):
     }
 
 def search(words, subpath, block=True):
-    query = cmd % dict(path=subpath, words=words, max_res=max_res)
-    with sub.Popen(query, shell=True, stdout=sub.PIPE) as proc:
+    query = cmd % dict(words=words, max_res=max_res)
+    with sub.Popen(query, shell=True, cwd=subpath, stdout=sub.PIPE) as proc:
         outp, _ = proc.communicate()
 
     infodict = OrderedDict()
     for line in outp.decode().split('\n'):
         if len(line) > 0:
             fpath, line, text = line.split(':', maxsplit=2)
-            frela = os.path.relpath(fpath, subpath)
             if len(text) > max_len - 3:
                 text = text[:max_len-3] + '...'
-            infodict.setdefault(frela, []).append((line, text))
+            infodict.setdefault(fpath, []).append((line, text))
 
     return [make_result(frela, info) for frela, info in infodict.items()]
 
@@ -147,7 +146,7 @@ def delete_file(fpath):
     if not os.path.isdir(fpath):
         os.remove(fpath)
     else:
-        print('Cannot remove directory: %s' % fpath)
+        print(f'Cannot remove directory: {fpath}')
 
 # text tools
 def bsplit(s, sep='\n'):
@@ -202,9 +201,8 @@ class DemoHandler(tornado.web.RequestHandler):
     def get(self):
         drand = rand_hex()
         fullpath = os.path.join(normpath, drand)
-        os.mkdir(fullpath)
-        shutil.copy(os.path.join('testing', 'testing'), fullpath)
-        self.redirect('/%s' % drand)
+        shutil.copytree(args.demo, fullpath)
+        self.redirect(f'/{drand}')
 
 class FuzzyHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
@@ -214,8 +212,8 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
         return True
 
     def open(self, subpath):
-        print('connection received: %s' % subpath)
-        if args.demo and subpath == '':
+        print(f'connection received: {subpath}')
+        if args.demo is not None and subpath == '':
             print('cannot do top level in demo')
             self.close(code=401, reason='no permissions in demo mode')
         self.subpath = subpath
@@ -244,36 +242,36 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
             cmd, cont = data['cmd'], data['content']
 
             if cmd == 'query':
-                print('Query: %s' % cont)
+                print(f'Query: {cont}')
                 ret = list(search(cont, self.fullpath))
                 self.write_json({'cmd': 'results', 'content': ret})
             elif cmd == 'text':
-                print('Loading: %s' % cont)
+                print(f'Loading: {cont}')
                 fpath = os.path.join(self.fullpath, cont)
                 if validate_path(fpath):
                     info = load_file(fpath)
                     self.write_json({'cmd': 'text', 'content': dict(file=cont, **info)})
                 else:
-                    print('Invalid load path: %s' % fpath)
+                    print(f'Invalid load path: {fpath}')
             elif cmd == 'save':
                 fname = cont['file']
-                print('Saving: %s' % fname)
+                print(f'Saving: {fname}')
                 if args.edit:
                     fpath = os.path.join(self.fullpath, fname)
                     if validate_path(fpath):
                         save_file(fpath, cont)
                     else:
-                        print('Invalid save path: %s' % fdest)
+                        print(f'Invalid save path: {fdest}')
                 else:
                     print('Edit attempt in read-only mode!')
             elif cmd == 'delete':
-                print('Delete: %s' % cont)
+                print('Delete: {cont}')
                 if args.edit:
                     fpath = os.path.join(self.fullpath, cont)
                     if validate_path(fpath):
                         delete_file(fpath)
                     else:
-                        print('Invalid delete path: %s' % fpath)
+                        print(f'Invalid delete path: {fpath}')
                 else:
                     print('Edit attempt in read-only mode!')
         except Exception as e:
@@ -288,7 +286,7 @@ class Application(tornado.web.Application):
             (r'/__login/?', AuthLoginHandler),
             (r'/__logout/?', AuthLogoutHandler),
         ]
-        if args.demo:
+        if args.demo is not None:
             handlers += [
                 (r'/?', DemoHandler),
                 (r'/(.+)/?', EditorHandler)
