@@ -1,5 +1,24 @@
 /* fuzzy editor */
 
+// begin module
+var editor = (function() {
+
+// global states
+var file = null;
+var active = false;
+var editing = null;
+
+// global ui elements
+var fuzzy = null;
+var results = null;
+var output = null;
+var body = null;
+var title = null;
+var tags = null;
+var query = null;
+var newdoc = null;
+var delbox = null;
+
 // escaping
 function strip_tags(html) {
     return html.replace(/\n/g, '')
@@ -265,7 +284,7 @@ function create_websocket(first_time) {
     };
 }
 
-function connect()
+function connect_websocket(subpath)
 {
     if ('MozWebSocket' in window) {
         WebSocket = MozWebSocket;
@@ -279,7 +298,7 @@ function connect()
     }
 }
 
-function disconnect()
+function disconnect_websocket()
 {
     if (ws_con) {
         ws_con.close();
@@ -302,28 +321,9 @@ function save_output(box) {
     fuzzy.removeClass('create');
 }
 
-$(document).ready(function () {
-    fuzzy = $('#fuzzy');
-    results = $('#results');
-    query = $('#query');
-    output = $('#output');
-    head = $('#head');
-    body = $('#body');
-    title = $('#title');
-    tags = $('#tags');
-    newdoc = $('#newdoc');
-    delbox = $('#delbox');
-
-    // global states
-    file = null;
-    active = false;
-    editing = fuzzy.hasClass('editing');
-
+function connect_handlers() {
     // autoresize
     body.textareaAutoSize();
-
-    // connect handlers
-    connect();
     query.focus();
 
     query.keypress(function(event) {
@@ -461,4 +461,32 @@ $(document).ready(function () {
             return false;
         }
     });
-});
+}
+
+function init(config) {
+    fuzzy = $('#fuzzy');
+    results = $('#results');
+    output = $('#output');
+    body = $('#body');
+    title = $('#title');
+    tags = $('#tags');
+    query = $('#query');
+    newdoc = $('#newdoc');
+    delbox = $('#delbox');
+
+    editing = config['editing'];
+    if (editing) {
+        fuzzy.addClass('editing');
+    }
+
+    connect_websocket(config['subpath']);
+    connect_handlers();
+}
+
+// public interface
+return {
+    init: init
+}
+
+// end module
+})();

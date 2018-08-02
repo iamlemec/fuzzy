@@ -103,8 +103,16 @@ body {
     display: none;
 }
 
+#results {
+    overflow: -moz-scrollbars-none;
+}
+
 #output::-webkit-scrollbar {
     display: none;
+}
+
+#output {
+    overflow: -moz-scrollbars-none;
 }
 
 .res_box {
