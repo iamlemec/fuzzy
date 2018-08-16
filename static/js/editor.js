@@ -32,7 +32,7 @@ function strip_tags(html) {
 
 // tools
 function is_editable(element) {
-    return (event.target.getAttribute('contentEditable') || (event.target.tagName.toLowerCase() == 'input'));
+    return (element.getAttribute('contentEditable') || (element.tagName.toLowerCase() == 'input'));
 }
 
 function scroll_top() {
@@ -161,7 +161,7 @@ function ensure_inactive() {
     if (active && editing) {
         title.empty();
         tags.empty();
-        body.val("");
+        body.val('');
         title.attr('contentEditable', false);
         body.attr('contentEditable', false);
         fuzzy.removeClass('active');
@@ -350,9 +350,11 @@ function connect_handlers() {
     delbox.click(function(event) {
         var ans = window.confirm('Are you sure you want to delete ' + file + '?');
         if (ans) {
-            $('.res_box[file=' + file + ']').remove();
             ensure_inactive();
-            send_command('delete', file);
+            if (!fuzzy.hasClass('create')) {
+                $('.res_box[file=' + file + ']').remove();
+                send_command('delete', file);
+            }
         }
     });
 

@@ -195,7 +195,7 @@ body {
     padding: 3px;
 }
 
-#fuzzy.active.editing:not(.create) #delbox {
+#fuzzy.active.editing #delbox {
     visibility: visible;
 }
 
