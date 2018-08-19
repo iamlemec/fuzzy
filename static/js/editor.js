@@ -151,7 +151,6 @@ function set_modified(mod) {
 function ensure_active() {
     if (!active && editing) {
         title.attr('contentEditable', true);
-        body.attr('contentEditable', true);
         fuzzy.addClass('active');
         active = true;
     }
@@ -163,7 +162,6 @@ function ensure_inactive() {
         tags.empty();
         body.val('');
         title.attr('contentEditable', false);
-        body.attr('contentEditable', false);
         fuzzy.removeClass('active');
         fuzzy.removeClass('modified');
         fuzzy.removeClass('create');
@@ -372,8 +370,9 @@ function connect_handlers() {
     });
 
     title.keydown(function(event) {
+        console.log('title', is_caret_at_end(title[0]));
         if (event.keyCode == 13) { // return
-            if (!event.shiftKey && !event.metaKey) {
+            if (!event.shiftKey && !event.metaKey && !event.ctrlKey) {
                 return false;
             }
         } else if ((event.keyCode == 34) || (event.keyCode == 40) || ((event.keyCode == 39) && is_caret_at_end(title[0]))) { // pgdn/down/right
@@ -417,7 +416,7 @@ function connect_handlers() {
             }
         }
         if (event.target.id == 'query') {
-            if (!editing && (event.keyCode == 9)) {
+            if ((!editing || !active) && (event.keyCode == 9)) {
                 return false;
             }
             if ((event.keyCode == 38) || (event.keyCode == 40)) {
