@@ -32,7 +32,8 @@ function strip_tags(html) {
 
 // tools
 function is_editable(element) {
-    return (element.getAttribute('contentEditable') || (element.tagName.toLowerCase() == 'input'));
+    var tag = element.tagName.toLowerCase();
+    return (element.getAttribute('contentEditable') || (tag == 'input') || (tag == 'textarea'));
 }
 
 function scroll_top() {
