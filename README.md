@@ -2,6 +2,8 @@
 
 High performance note taking with fuzzy search. Powered by [fzf](https://github.com/junegunn/fzf) and Python.
 
+![fuzzy](fuzzy.png)
+
 # Running
 
 To use Fuzzy in editing mode, run the command
