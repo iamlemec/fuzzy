@@ -1,8 +1,8 @@
 # Fuzzy
 
-High performance note taking with fuzzy search. Powered by [fzf](https://github.com/junegunn/fzf | width=300) and Python.
+High performance note taking with fuzzy search. Powered by [fzf](https://github.com/junegunn/fzf) and Python.
 
-![fuzzy](fuzzy.png)
+![fuzzy](fuzzy.png | width=300)
 
 # Running
 
