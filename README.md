@@ -2,7 +2,7 @@
 
 High performance note taking with fuzzy search. Powered by [fzf](https://github.com/junegunn/fzf) and Python.
 
-![fuzzy](fuzzy.png | width=300)
+<img alg="fuzzy" src="fuzzy.png" width="300"/>
 
 # Running
 
