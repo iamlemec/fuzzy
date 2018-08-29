@@ -120,6 +120,17 @@ function is_caret_at_end(element) {
     return (cpos == tlen);
 }
 
+function interceptPaste(event) {
+    // only get text data
+    var text = event.originalEvent.clipboardData.getData('text');
+
+    // other method
+    document.execCommand('insertText', false, text);
+
+    // stop normal paste
+    event.preventDefault();
+}
+
 function send_command(cmd, cont) {
     var msg = JSON.stringify({'cmd': cmd, 'content': cont});
     ws.send(msg);
@@ -152,6 +163,7 @@ function set_modified(mod) {
 function ensure_active() {
     if (!active && editing) {
         title.attr('contentEditable', true);
+        body.attr('contentEditable', true);
         fuzzy.addClass('active');
         active = true;
     }
@@ -161,8 +173,9 @@ function ensure_inactive() {
     if (active && editing) {
         title.empty();
         tags.empty();
-        body.val('');
+        body.empty();
         title.attr('contentEditable', false);
+        body.attr('contentEditable', false);
         fuzzy.removeClass('active');
         fuzzy.removeClass('modified');
         fuzzy.removeClass('create');
@@ -213,13 +226,13 @@ function render_results(res) {
 
 function render_output(info) {
     ensure_active();
-    title.html(info['title']);
+    title.text(info['title']);
     tags.empty();
     $(info['tags']).each(function(i, s) {
         tags.append(render_tag(s));
         tags.append(' ');
     });
-    body.val(info['body']).trigger('input');
+    body.text(info['body']).trigger('input');
 }
 
 function create_tag(box) {
@@ -305,9 +318,9 @@ function disconnect_websocket()
 }
 
 function save_output(box) {
-    var tit = title.text();
     var tag = tags.find('.tag_lab').map(function(i, t) { return t.innerHTML; } ).toArray();
-    var bod = body.val();
+    var tit = title[0].innerText;
+    var bod = body[0].innerText;
     if (bod.endsWith('\n')) {
         bod = bod.slice(0, -1);
     }
@@ -321,8 +334,6 @@ function save_output(box) {
 }
 
 function connect_handlers() {
-    // autoresize
-    body.textareaAutoSize();
     query.focus();
 
     query.keypress(function(event) {
@@ -371,30 +382,28 @@ function connect_handlers() {
     });
 
     title.keydown(function(event) {
-        console.log('title', is_caret_at_end(title[0]));
         if (event.keyCode == 13) { // return
             if (!event.shiftKey && !event.metaKey && !event.ctrlKey) {
                 return false;
             }
         } else if ((event.keyCode == 34) || (event.keyCode == 40) || ((event.keyCode == 39) && is_caret_at_end(title[0]))) { // pgdn/down/right
-            body[0].focus();
-            body[0].setSelectionRange(0,0);
+            set_caret_at_beg(body[0]);
             output.scrollTop(0);
             return false;
         }
     });
 
     body.keydown(function(event) {
-        if ((event.keyCode == 37) && (body.prop('selectionStart') == 0)) { // left
+        if ((event.keyCode == 37) && is_caret_at_beg(body[0])) { // left
             set_caret_at_end(title[0]);
             output.scrollTop(0);
             return false;
-        } else if (((event.keyCode == 33) || (event.keyCode == 38)) && (body.prop('selectionStart') == 0)) { // pgup/up
+        } else if (((event.keyCode == 33) || (event.keyCode == 38)) && is_caret_at_beg(body[0])) { // pgup/up
             set_caret_at_beg(title[0]);
             output.scrollTop(0);
             return false;
-        } else if ((event.keyCode == 40) && (body.prop('selectionStart') == body.val().length)) {
-            output.scrollTop(output.prop('scrollHeight')-output.height());
+        } else if ((event.keyCode == 40) && is_caret_at_end(body[0])) {
+            output.scrollTop(output.prop('scrollHeight'));
             return false;
         } else if (!event.ctrlKey) {
             if (!(active && editing)) {
@@ -403,6 +412,11 @@ function connect_handlers() {
         }
     });
 
+    // intercept paste and insert only text
+    title.bind('paste', interceptPaste);
+    body.bind('paste', interceptPaste);
+
+    // detect modification
     output.bind('input', function() {
         if (active && editing) {
             set_modified(true);

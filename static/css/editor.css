@@ -88,6 +88,10 @@ body {
 
 #body {
     flex: auto;
+    white-space: pre-wrap;
+    margin-bottom: 0px;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 #title {
@@ -96,7 +100,7 @@ body {
 }
 
 #tags {
-    margin-left: 3px;
+    margin-left: 6px;
 }
 
 #results::-webkit-scrollbar {
