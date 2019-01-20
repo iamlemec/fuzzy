@@ -108,7 +108,7 @@ body {
 }
 
 #results {
-    overflow: -moz-scrollbars-none;
+    overflow: hidden;
 }
 
 #output::-webkit-scrollbar {
@@ -116,7 +116,7 @@ body {
 }
 
 #output {
-    overflow: -moz-scrollbars-none;
+    overflow: hidden;
 }
 
 .res_box {
