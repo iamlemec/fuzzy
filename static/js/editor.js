@@ -4,9 +4,9 @@
 var editor = (function() {
 
 // global states
-var file = null;
-var active = false;
-var editing = null;
+var file = null; // current file relative path
+var active = false; // is the right pane editor active?
+var editing = null; // are we in editing mode?
 
 // global ui elements
 var fuzzy = null;
@@ -29,6 +29,10 @@ function strip_tags(html) {
                .replace(/<\/div>/g, '\n')
                .replace(/&amp;/g, '&');
 };
+
+function standardize_name(name) {
+    return name.toLowerCase().trim().replace(/\W/g, '_').replace(/_{2,}/g, '_');
+}
 
 // tools
 function is_editable(element) {
@@ -120,7 +124,7 @@ function is_caret_at_end(element) {
     return (cpos == tlen);
 }
 
-function interceptPaste(event) {
+function intercept_paste(event) {
     // only get text data
     var text = event.originalEvent.clipboardData.getData('text');
 
@@ -178,7 +182,6 @@ function ensure_inactive() {
         body.attr('contentEditable', false);
         fuzzy.removeClass('active');
         fuzzy.removeClass('modified');
-        fuzzy.removeClass('create');
         active = false;
     }
 }
@@ -226,7 +229,7 @@ function render_results(res) {
 
 function render_output(info) {
     ensure_active();
-    title.text(info['title']);
+    title.text(info['title']); // to separate last title word and first tag word for spellcheck :)
     tags.empty();
     $(info['tags']).each(function(i, s) {
         tags.append(render_tag(s));
@@ -258,6 +261,17 @@ function create_tag(box) {
     });
 }
 
+function save_output(box) {
+    var tag = tags.find('.tag_lab').map(function(i, t) { return t.innerHTML; } ).toArray();
+    var tit = title[0].innerText;
+    var bod = body[0].innerText;
+    if (bod.endsWith('\n')) {
+        bod = bod.slice(0, -1);
+    }
+    send_command('save', {'file': file, 'title': tit, 'tags': tag, 'body': bod, 'create': false});
+    set_modified(false);
+}
+
 function create_websocket(first_time) {
     ws = new WebSocket(ws_con);
 
@@ -280,7 +294,6 @@ function create_websocket(first_time) {
                 render_output(cont);
                 file = cont['file'];
                 set_modified(false);
-                fuzzy.removeClass('create');
                 scroll_top();
             }
         }
@@ -317,54 +330,36 @@ function disconnect_websocket()
     }
 }
 
-function save_output(box) {
-    var tag = tags.find('.tag_lab').map(function(i, t) { return t.innerHTML; } ).toArray();
-    var tit = title[0].innerText;
-    var bod = body[0].innerText;
-    if (bod.endsWith('\n')) {
-        bod = bod.slice(0, -1);
-    }
-    if (file == null) {
-        file = tit.toLowerCase().replace(/\W/g, '_').replace(/_{2,}/g, '_');
-    }
-    var create = fuzzy.hasClass('create');
-    send_command('save', {'file': file, 'title': tit, 'tags': tag, 'body': bod, 'create': create});
-    set_modified(false);
-    fuzzy.removeClass('create');
-}
-
 function connect_handlers() {
     query.focus();
 
     query.keypress(function(event) {
         if (event.keyCode == 13) { // return
             var text = query.val();
-            send_command('query', text);
+            if (event.ctrlKey) {
+                var name = standardize_name(text);
+                send_command('create_or_open', {'file': name, 'title': text});
+                body.focus();
+            } else {
+                send_command('query', text);
+            }
             return false;
         }
     });
 
     newdoc.click(function(event) {
-        file = null;
-        var term = query.val();
-        render_output({
-            'title': term,
-            'tags': [],
-            'body': ''
-        });
-        select_all(title[0]);
-        set_modified(true);
-        fuzzy.addClass('create');
+        var text = query.val();
+        var title = standardize_name(text);
+        send_command('create_or_open', title);
+        body.focus();
     });
 
     delbox.click(function(event) {
         var ans = window.confirm('Are you sure you want to delete ' + file + '?');
         if (ans) {
             ensure_inactive();
-            if (!fuzzy.hasClass('create')) {
-                $('.res_box[file=' + file + ']').remove();
-                send_command('delete', file);
-            }
+            $('.res_box[file=' + file + ']').remove();
+            send_command('delete', file);
         }
     });
 
@@ -413,8 +408,8 @@ function connect_handlers() {
     });
 
     // intercept paste and insert only text
-    title.bind('paste', interceptPaste);
-    body.bind('paste', interceptPaste);
+    title.bind('paste', intercept_paste);
+    body.bind('paste', intercept_paste);
 
     // detect modification
     output.bind('input', function() {

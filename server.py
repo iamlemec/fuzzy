@@ -265,7 +265,7 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
                 else:
                     print('Edit attempt in read-only mode!')
             elif cmd == 'delete':
-                print('Delete: {cont}')
+                print(f'Delete: {cont}')
                 if args.edit:
                     fpath = os.path.join(self.fullpath, cont)
                     if validate_path(fpath):
@@ -274,6 +274,17 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
                         print(f'Invalid delete path: {fpath}')
                 else:
                     print('Edit attempt in read-only mode!')
+            elif cmd == 'create_or_open':
+                print(f'Create or Open: {cont}')
+                fname, title = cont['file'], cont['title']
+                fpath = os.path.join(self.fullpath, fname)
+                if validate_path(fpath):
+                    if args.edit and not os.path.exists(fpath):
+                        save_file(fpath, {'file': fname, 'title': title, 'tags': [], 'body': '', 'create': True})
+                    info = load_file(fpath)
+                    self.write_json({'cmd': 'text', 'content': dict(file=fname, **info)})
+                else:
+                    print(f'Invalid create_or_open path: {fpath}')
         except Exception as e:
             print(e)
             print(traceback.format_exc())
