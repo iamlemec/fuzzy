@@ -107,16 +107,8 @@ body {
     display: none;
 }
 
-#results {
-    overflow: hidden;
-}
-
 #output::-webkit-scrollbar {
     display: none;
-}
-
-#output {
-    overflow: hidden;
 }
 
 .res_box {

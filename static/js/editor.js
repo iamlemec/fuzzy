@@ -196,6 +196,7 @@ function render_entry(info) {
     box.append(span);
     box.click(function(event) {
         select_entry(box);
+        query.focus();
         return false;
     });
     return box;
@@ -419,14 +420,14 @@ function connect_handlers() {
     });
 
     $(document).unbind('keydown').bind('keydown', function(event) {
-        if (event.keyCode == 8) {
+        if (event.keyCode == 8) { // backspace
             if (!is_editable(event.target)) {
                 console.log('rejecting editing key: ', event.target.tagName.toLowerCase());
                 return false;
             }
         }
         if (event.target.id == 'query') {
-            if ((!editing || !active) && (event.keyCode == 9)) {
+            if ((!editing || !active) && (event.keyCode == 9)) { // tab
                 return false;
             }
             if ((event.keyCode == 38) || (event.keyCode == 40)) {
@@ -459,7 +460,7 @@ function connect_handlers() {
                 return false;
             }
         } else {
-            if (event.keyCode == 9) {
+            if (event.keyCode == 9) { // tab
                 query.focus();
                 return false;
             }
