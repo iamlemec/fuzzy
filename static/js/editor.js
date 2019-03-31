@@ -350,7 +350,7 @@ function connect_handlers() {
     newdoc.click(function(event) {
         var text = query.val();
         var title = standardize_name(text);
-        send_command('create_or_open', title);
+        send_command('create_or_open', {'file': title, 'title': text});
         body.focus();
     });
 
