@@ -89,7 +89,7 @@ body {
 #body {
     flex: auto;
     white-space: pre-wrap;
-    margin-bottom: 0px;
+    margin-bottom: 40px;
     width: 100%;
     overflow-x: hidden;
 }
@@ -109,6 +109,14 @@ body {
 
 #output::-webkit-scrollbar {
     display: none;
+}
+
+#results {
+    scrollbar-width: none;
+}
+
+#output {
+    scrollbar-width: none;
 }
 
 .res_box {

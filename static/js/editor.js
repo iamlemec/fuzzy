@@ -427,8 +427,12 @@ function connect_handlers() {
             }
         }
         if (event.target.id == 'query') {
-            if ((!editing || !active) && (event.keyCode == 9)) { // tab
-                return false;
+            if (event.keyCode == 9) { // tab
+                if (!editing || !active) {
+                    return false;
+                } else {
+                    title.focus();
+                }
             }
             if ((event.keyCode == 38) || (event.keyCode == 40)) {
                 var box = $('.res_box.selected');
