@@ -89,7 +89,7 @@ body {
 #body {
     flex: auto;
     white-space: pre-wrap;
-    margin-bottom: 40px;
+    margin-bottom: 0px;
     width: 100%;
     overflow-x: hidden;
 }
