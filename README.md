@@ -4,6 +4,10 @@ High performance note taking with fuzzy search. Powered by [fzf](https://github.
 
 <img alg="fuzzy" src="fuzzy.png" width="600"/>
 
+# Installing
+
+First install [fzf](https://github.com/junegunn/fzf) and make sure it's in your path. Then make sure you have `tornado` installed in Python. Finally, clone this repository locally.
+
 # Running
 
 To use Fuzzy in editing mode, run the command
