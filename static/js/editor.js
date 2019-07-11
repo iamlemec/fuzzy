@@ -217,6 +217,12 @@ function render_tag(label) {
             body.focus();
         });
     }
+    lab.click(function(event) {
+        var text = '#' + lab.text();
+        query.val(text);
+        send_command('query', text);
+        query.focus();
+    });
     return tag;
 }
 
@@ -265,10 +271,7 @@ function create_tag(box) {
 function save_output(box) {
     var tag = tags.find('.tag_lab').map(function(i, t) { return t.innerHTML; } ).toArray();
     var tit = title[0].innerText;
-    var bod = body[0].innerText;
-    if (bod.endsWith('\n')) {
-        bod = bod.slice(0, -1);
-    }
+    var bod = body[0].innerHTML.replace(/<div><br><\/div>/g,'\n\n').replace(/<br>/g,'').replace(/<\/?div>/g, '');
     send_command('save', {'file': file, 'title': tit, 'tags': tag, 'body': bod, 'create': false});
     set_modified(false);
 }
@@ -398,7 +401,7 @@ function connect_handlers() {
             set_caret_at_beg(title[0]);
             output.scrollTop(0);
             return false;
-        } else if ((event.keyCode == 40) && is_caret_at_end(body[0])) {
+        } else if ((event.keyCode == 40) && is_caret_at_end(body[0])) { // down
             output.scrollTop(output.prop('scrollHeight'));
             return false;
         } else if (!event.ctrlKey) {

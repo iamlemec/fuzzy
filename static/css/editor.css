@@ -89,9 +89,20 @@ body {
 #body {
     flex: auto;
     white-space: pre-wrap;
-    margin-bottom: 0px;
-    width: 100%;
+    min-height: 420px;
+    box-sizing: border-box;
     overflow-x: hidden;
+    overflow-y: hidden;
+    width: 100%;
+    border: 0;
+    outline: 0;
+    margin-bottom: 0px;
+    padding-bottom: 40px;
+    resize: none;
+    background: #070908;
+    color: #E7F3FD;
+    font-size: 16px;
+    font-family: 'Source Sans Pro', serif;
 }
 
 #title {
@@ -235,18 +246,6 @@ body {
 /* body language */
 
 #body {
-    min-height: 420px;
-    box-sizing: border-box;
-    overflow-y: hidden;
-    width: 100%;
-    border: 0;
-    outline: 0;
-    padding: 0;
-    resize: none;
-    background: #070908;
-    color: #E7F3FD;
-    font-size: 16px;
-    font-family: 'Source Sans Pro', serif;
 }
 
 /* theme */
