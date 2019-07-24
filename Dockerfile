@@ -31,4 +31,4 @@ COPY static /opt/fuzzy/static
 COPY templates /opt/fuzzy/templates
 
 # Run when the container launches
-CMD ["python", "-u", "server.py", "--demo=docs", "--path=/data", "--ip=0.0.0.0", "--port=80"]
+CMD ["python", "-u", "server.py", "--demo=docs", "--edit", "--path=/data", "--ip=0.0.0.0", "--port=80"]
