@@ -3,6 +3,9 @@
 // begin module
 var editor = (function() {
 
+// hardcoded options
+var max_per = 5; // maximum number of matches per result
+
 // global states
 var file = null; // current file relative path
 var active = false; // is the right pane editor active?
@@ -149,7 +152,7 @@ function select_entry(box) {
     if (newfile == file) {
         return;
     }
-    send_command('text', newfile);
+    send_command('text', {'file': newfile});
 }
 
 function is_modified() {
@@ -189,7 +192,10 @@ function ensure_inactive() {
 function render_entry(info) {
     var file = info['file'];
     var num = info['num'];
-    var text = info['text'].join('<br/>');
+    var res = info['text'].slice(0, max_per);
+    var text = $.map(res, function(x) {
+        return x.join(': ');
+    }).join('<br/>');
     var name = '<span class="res_name">' + file + ' (' + num + ')</span>';
     var box = $('<div>', {class: 'res_box', file: file, num: num});
     var span = $('<span>', {class: 'res_title', html: name + '<br/>' + text});

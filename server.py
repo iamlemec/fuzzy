@@ -30,7 +30,6 @@ args = parser.parse_args()
 tmp_dir = 'temp'
 max_len = 90
 max_res = 100
-max_per = 5
 
 # search tools
 cmd = 'ag --follow --nobreak --noheading ".+" | fzf -f "%(words)s" | head -n %(max_res)d'
@@ -72,7 +71,7 @@ def make_result(fpath, info):
     return {
         'file': fpath,
         'num': len(info),
-        'text': [f'{i}: {t}' for i, t in info[:max_per]]
+        'text': [(i, t) for i, t in info]
     }
 
 def search(words, subpath, block=True):
@@ -246,11 +245,12 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
                 ret = list(search(cont, self.fullpath))
                 self.write_json({'cmd': 'results', 'content': ret})
             elif cmd == 'text':
-                print(f'Loading: {cont}')
-                fpath = os.path.join(self.fullpath, cont)
+                fname = cont['file']
+                print(f'Loading: {fname}')
+                fpath = os.path.join(self.fullpath, fname)
                 if validate_path(fpath):
                     info = load_file(fpath)
-                    self.write_json({'cmd': 'text', 'content': dict(file=cont, **info)})
+                    self.write_json({'cmd': 'text', 'content': dict(file=fname, **info)})
                 else:
                     print(f'Invalid load path: {fpath}')
             elif cmd == 'save':
