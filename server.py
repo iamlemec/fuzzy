@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+
+# fuzzy server
+
 import os
 import json
 import operator

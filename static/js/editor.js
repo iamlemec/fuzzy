@@ -22,17 +22,7 @@ var query = null;
 var newdoc = null;
 var delbox = null;
 
-// escaping
-function strip_tags(html) {
-    return html.replace(/\n/g, '')
-               .replace(/<div ?.*?>/g, '')
-               .replace(/<br>/g, '')
-               .replace(/<span ?.*?>/g, '')
-               .replace(/<\/span>/g, '')
-               .replace(/<\/div>/g, '\n')
-               .replace(/&amp;/g, '&');
-};
-
+// generating filenames
 function standardize_name(name) {
     return name.toLowerCase().trim().replace(/\W/g, '_').replace(/_{2,}/g, '_');
 }
@@ -274,10 +264,24 @@ function create_tag(box) {
     });
 }
 
+function decode_html(input) {
+    var e = document.createElement('div');
+    e.innerHTML = input;
+    return e.childNodes.length === 0 ? '' : e.childNodes[0].nodeValue;
+}
+
+function demangle_body(html) {
+    return html.replace(/<div><br><\/div>/g, '\n\n')
+               .replace(/<\/div><div>/g, '\n')
+               .replace(/<br>/g, '')
+               .replace(/<\/?div>/g, '');
+}
+
 function save_output(box) {
     var tag = tags.find('.tag_lab').map(function(i, t) { return t.innerHTML; } ).toArray();
     var tit = title[0].innerText;
-    var bod = body[0].innerHTML.replace(/<div><br><\/div>/g,'\n\n').replace(/<br>/g,'').replace(/<\/?div>/g, '');
+    var htm = body[0].innerHTML;
+    var bod = decode_html(demangle_body(htm));
     send_command('save', {'file': file, 'title': tit, 'tags': tag, 'body': bod, 'create': false});
     set_modified(false);
 }
@@ -310,6 +314,7 @@ function create_websocket(first_time) {
     };
 
     ws.onclose = function() {
+        console.log('websocket closing!');
         /*
         console.log('websocket closed, attempting to reconnect');
         setTimeout(function() {
