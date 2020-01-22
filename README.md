@@ -6,7 +6,7 @@ High performance note taking with fuzzy search. Powered by [fzf](https://github.
 
 # Installing
 
-First install [fzf](https://github.com/junegunn/fzf) and make sure it's in your path. Then make sure you have `tornado` installed in Python. Finally, clone this repository locally.
+First install [fzf](https://github.com/junegunn/fzf) and [the silver searcher (ag)](https://github.com/ggreer/the_silver_searcher) and  make sure they're in your path. The only non-standard Python package requirement is `tornado`. Finally, clone this repository locally.
 
 # Running
 
