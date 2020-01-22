@@ -1,5 +1,10 @@
 @import url('source-sans-pro.css');
 
+:root {
+    --cool-blue: #4284F2;
+    --hover-opacity: 0.75;
+}
+
 html {
     font-family: 'Source Sans Pro', serif;
 }
@@ -164,8 +169,12 @@ body {
     margin-left: 0px;
     color: white;
     white-space: nowrap;
-    background-color: #4284F2;
+    background-color: var(--cool-blue);
     border-radius: 4px;
+}
+
+.tag_box:hover {
+    opacity: var(--hover-opacity);
 }
 
 .tag_lab {
@@ -193,7 +202,7 @@ body {
 #delbox {
     visibility: hidden;
     cursor: default;
-    background-color: #4284F2;
+    background-color: var(--cool-blue);
     border-radius: 3px;
     position: absolute;
     right: 6px;
@@ -202,6 +211,10 @@ body {
     font-weight: bold;
     height: 17px;
     width: 17px;
+}
+
+#delbox:hover {
+    opacity: var(--hover-opacity);
 }
 
 #delbox > img {
@@ -221,7 +234,7 @@ body {
 #newdoc {
     visibility: hidden;
     cursor: default;
-    background-color: #4284F2;
+    background-color: var(--cool-blue);
     border-radius: 3px;
     position: absolute;
     right: 6px;
@@ -231,6 +244,10 @@ body {
     font-size: 15px;
     font-weight: bold;
     color: white;
+}
+
+#newdoc:hover {
+    opacity: var(--hover-opacity);
 }
 
 #newdoc > img {
