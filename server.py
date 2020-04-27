@@ -219,8 +219,8 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
         if args.demo is not None and subpath == '':
             print('cannot do top level in demo')
             self.close(code=401, reason='no permissions in demo mode')
-        self.subpath = subpath
-        self.fullpath = os.path.normpath(os.path.join(normpath, subpath))
+        self.subpath = subpath if type(subpath) is str else subpath.decode()
+        self.fullpath = os.path.normpath(os.path.join(normpath, self.subpath))
         if not validate_path(self.fullpath, weak=True):
             print('invalid subpath')
             self.close(code=401, reason='invalid subpath')
