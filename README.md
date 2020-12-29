@@ -23,4 +23,4 @@ The above will only be available locally. Add `--ip=0.0.0.0` to the command for 
 You can do everthing from the keyboard, but the mouse still works if you like. When you're in the search pane, typing will modify your query then press `Enter` to run it and `Up`/`Down` to navigate the results. As you move through the results, the note contents will be displayed in the view pane. Press `Tab` to switch between the view pane and the search pane. When in the view pane, you also have
 
 - `Shift + Enter`: Save the note to disk. When you do this the box in the top right will turn from red (edited) to blue (saved/unmodified).
-- `Ctrl + Tab`: Add a tag to the current note. This will create an empty tag which you must type in then press `Enter` again to commit it.
+- `Ctrl + Enter`: Add a tag to the current note. This will create an empty tag which you must type in then press `Enter` again to commit it.
