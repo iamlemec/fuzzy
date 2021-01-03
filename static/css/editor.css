@@ -5,10 +5,6 @@
     --hover-opacity: 0.75;
 }
 
-html {
-    font-family: 'Source Sans Pro', serif;
-}
-
 html::-webkit-scrollbar {
     display: none;
 }
@@ -106,8 +102,6 @@ body {
     resize: none;
     background: #070908;
     color: #E7F3FD;
-    font-size: 16px;
-    font-family: 'Source Sans Pro', serif;
 }
 
 #title {

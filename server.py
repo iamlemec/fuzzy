@@ -27,7 +27,8 @@ parser.add_argument('--sep', action='store_true', help='put tags on next line')
 parser.add_argument('--head', type=str, default='!', help='header indicator (on write)')
 parser.add_argument('--edit', action='store_true', help='enable editing mode (experimental)')
 parser.add_argument('--demo', type=str, default=None, help='enable demo mode')
-parser.add_argument('--auth', type=str, default=None)
+parser.add_argument('--auth', type=str, default=None, help='authorization file to use')
+parser.add_argument('--theme', type=str, default='default', help='Theme CSS file to use')
 args = parser.parse_args()
 
 # hardcoded
@@ -198,7 +199,7 @@ class AuthLogoutHandler(tornado.web.RequestHandler):
 class EditorHandler(tornado.web.RequestHandler):
     @authenticated
     def get(self, subpath):
-        self.render('editor.html', editing=args.edit, subpath=subpath)
+        self.render('editor.html', editing=args.edit, subpath=subpath, theme=args.theme)
 
 class DemoHandler(tornado.web.RequestHandler):
     def get(self):

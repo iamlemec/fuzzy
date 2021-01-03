@@ -1,0 +1,11 @@
+html, input {
+    font-family: monospace;
+}
+
+#results {
+    font-size: 12px;
+}
+
+#output {
+    font-size: 14px;
+}
