@@ -22,11 +22,6 @@ var query = null;
 var newdoc = null;
 var delbox = null;
 
-// generating filenames
-function standardize_name(name) {
-    return name.toLowerCase().trim().replace(/\W/g, '_').replace(/_{2,}/g, '_');
-}
-
 // tools
 function is_editable(element) {
     var tag = element.tagName.toLowerCase();
@@ -295,12 +290,12 @@ function create_websocket(first_time) {
 
     ws.onmessage = function (evt) {
         var msg = evt.data;
-        // console.log('Received: ' + msg);
 
         var json_data = JSON.parse(msg);
         if (json_data) {
             var cmd = json_data['cmd'];
             var cont = json_data['content'];
+            console.log('Received: ' + cmd);
             if (cmd == 'results') {
                 render_results(cont);
                 results[0].scrollTop = 0;
@@ -309,6 +304,12 @@ function create_websocket(first_time) {
                 file = cont['file'];
                 set_modified(false);
                 scroll_top();
+            } else if (cmd == 'rename') {
+                var [k, v] = cont;
+                $(`[file="${k}"]`).attr('file', v);
+                if (file == k) {
+                    file = v;
+                }
             }
         }
     };
@@ -352,8 +353,7 @@ function connect_handlers() {
         if (event.keyCode == 13) { // return
             var text = query.val();
             if (event.ctrlKey) {
-                var name = standardize_name(text);
-                send_command('create_or_open', {'file': name, 'title': text});
+                send_command('create', {'title': text});
                 body.focus();
             } else {
                 send_command('query', text);
@@ -364,8 +364,7 @@ function connect_handlers() {
 
     newdoc.click(function(event) {
         var text = query.val();
-        var title = standardize_name(text);
-        send_command('create_or_open', {'file': title, 'title': text});
+        send_command('create', {'title': text});
         body.focus();
     });
 

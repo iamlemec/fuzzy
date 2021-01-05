@@ -2,6 +2,7 @@
 
 # fuzzy server
 
+import re
 import os
 import json
 import operator
@@ -25,7 +26,8 @@ parser.add_argument('--port', type=int, default=9020, help='port to serve on')
 parser.add_argument('--tag', type=str, default='#', help='tag indicator')
 parser.add_argument('--sep', action='store_true', help='put tags on next line')
 parser.add_argument('--head', type=str, default='!', help='header indicator (on write)')
-parser.add_argument('--edit', action='store_true', help='enable editing mode (experimental)')
+parser.add_argument('--edit', action='store_true', help='enable editing mode')
+parser.add_argument('--rename', action='store_true', help='rename files based on title (experimental, no subdirs)')
 parser.add_argument('--demo', type=str, default=None, help='enable demo mode')
 parser.add_argument('--auth', type=str, default=None, help='authorization file to use')
 parser.add_argument('--theme', type=str, default='default', help='Theme CSS file to use')
@@ -70,6 +72,13 @@ def validate_path(relpath, weak=False):
     prefix = os.path.normpath(os.path.commonprefix([abspath, absbase]))
     op = operator.ge if weak else operator.gt
     return (prefix == absbase) and op(len(abspath), len(absbase))
+
+def standardize_name(name):
+    name = name.lower()
+    name = re.sub(r'\W', '_', name)
+    name = re.sub(r'_{2,}', '_', name)
+    name = name.strip('_')
+    return name
 
 # searching
 def make_result(fpath, info):
@@ -121,30 +130,52 @@ def load_file(fpath):
 
     return {'title': title, 'tags': tags, 'body': body}
 
-# output
-def save_file(fpath0, info):
-    tags = ' '.join([args.tag + t for t in info['tags']])
-    text = args.head + ' ' + info['title'] + ' ' + tags + '\n\n' + info['body']
+# find unused path
+def fuzz_path(path, name):
+    idx = 0
+    fname = name
+    fpath = os.path.join(path, fname)
+    while os.path.exists(fpath):
+        idx += 1
+        fname = f'{name}_{idx}'
+        fpath = os.path.join(path, fname)
+    return fname, fpath
 
-    rpath, fname0 = os.path.split(fpath0)
-    fname = fname0
-    fdest = fpath0
+# save file - possibly new or renamed
+# if existing file, name is current filename
+def save_file(path, name=None, title=None, tags=[], body=''):
+    # create full text
+    tags = ' '.join([args.tag + t for t in tags])
+    text = args.head + ' ' + title + ' ' + tags + '\n\n' + body
 
-    if info['create']:
-        idx = 0
-        while os.path.exists(fdest):
-            idx += 1
-            tag = '' if idx == 0 else f'_{idx}'
-            fname = fname0 + tag
-            fdest = os.path.join(rpath, fname)
+    # get implied name
+    name1 = standardize_name(title)
 
-    tname = rand_hex()
-    tpath = os.path.join(tmp_dir, tname)
+    # remove on rename existing
+    remove = None
+    if name is None:
+        fname, fpath = fuzz_path(path, name1)
+    else:
+        fpath0 = os.path.join(path, name)
+        if name == name1 or not args.rename:
+            fname, fpath = name, fpath0
+        else:
+            fname, fpath = fuzz_path(path, name1)
+            remove = fpath0
 
-    fid = open(tpath, 'w+')
-    fid.write(text)
-    fid.close()
-    shutil.move(tpath, fdest)
+    # temp file path
+    tpath = os.path.join(tmp_dir, rand_hex())
+
+    # save and copy
+    with open(tpath, 'w+') as fid:
+        fid.write(text)
+    shutil.move(tpath, fpath)
+
+    # seems safer to do this last
+    if remove is not None:
+        os.remove(fpath0)
+
+    return fpath, fname
 
 def delete_file(fpath):
     if not os.path.isdir(fpath):
@@ -259,12 +290,14 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
                 else:
                     print(f'Invalid load path: {fpath}')
             elif cmd == 'save':
-                fname = cont['file']
+                fname, title, tags, body = cont['file'], cont['title'], cont['tags'], cont['body']
                 print(f'Saving: {fname}')
                 if args.edit:
                     fpath = os.path.join(self.fullpath, fname)
                     if validate_path(fpath):
-                        save_file(fpath, cont)
+                        fpath1, fname1 = save_file(self.fullpath, name=fname, title=title, tags=tags, body=body)
+                        if fname1 != fname:
+                            self.write_json({'cmd': 'rename', 'content': [fname, fname1]})
                     else:
                         print(f'Invalid save path: {fdest}')
                 else:
@@ -279,17 +312,18 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
                         print(f'Invalid delete path: {fpath}')
                 else:
                     print('Edit attempt in read-only mode!')
-            elif cmd == 'create_or_open':
-                print(f'Create or Open: {cont}')
-                fname, title = cont['file'], cont['title']
-                fpath = os.path.join(self.fullpath, fname)
-                if validate_path(fpath):
-                    if args.edit and not os.path.exists(fpath):
-                        save_file(fpath, {'file': fname, 'title': title, 'tags': [], 'body': '', 'create': True})
-                    info = load_file(fpath)
-                    self.write_json({'cmd': 'text', 'content': dict(file=fname, **info)})
+            elif cmd == 'create':
+                print(f'Create: {cont}')
+                if args.edit:
+                    title = cont['title']
+                    fname = standardize_name(title)
+                    fpath = os.path.join(self.fullpath, fname)
+                    if validate_path(fpath):
+                        fpath1, fname1 = save_file(self.fullpath, title=fname)
+                        info = load_file(fpath1)
+                        self.write_json({'cmd': 'text', 'content': dict(file=fname1, **info)})
                 else:
-                    print(f'Invalid create_or_open path: {fpath}')
+                    print('Edit attempt in read-only mode!')
         except Exception as e:
             print(e)
             print(traceback.format_exc())
