@@ -17,11 +17,6 @@ html::-webkit-scrollbar {
     outline: 0;
 }
 
-body {
-    background: #070908;
-    color: #E7F3FD;
-}
-
 #outer {
     margin: auto;
     margin-top: 50px;
@@ -42,7 +37,6 @@ body {
     float: left;
     height: 100%;
     width: 40%;
-    background: #070908;
     display: flex;
     flex-direction: column;
 }
@@ -100,8 +94,6 @@ body {
     margin-bottom: 0px;
     padding-bottom: 40px;
     resize: none;
-    background: #070908;
-    color: #E7F3FD;
 }
 
 #title {

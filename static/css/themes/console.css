@@ -2,6 +2,11 @@ html, input {
     font-family: monospace;
 }
 
+body, #results, #output, #body {
+    background: #212121;
+    color: #E7F3FD;
+}
+
 #results {
     font-size: 12px;
 }
