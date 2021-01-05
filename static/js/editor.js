@@ -115,12 +115,22 @@ function is_caret_at_end(element) {
 function intercept_paste(event) {
     // only get text data
     var text = event.originalEvent.clipboardData.getData('text');
+    text = text.replace(/<br>/g, '\n');
 
     // other method
     document.execCommand('insertText', false, text);
 
     // stop normal paste
     event.preventDefault();
+}
+
+function insert_newline() {
+    var text = body.text();
+    var pos = get_caret_position(body[0]);
+    var text1 = text.slice(0, pos) + '\n' + text.slice(pos);
+    body.text(text1);
+    var pos1 = Math.min(pos+1, text.length);
+    set_caret_at_pos(body[0].firstChild, pos1);
 }
 
 function send_command(cmd, cont) {
@@ -265,18 +275,11 @@ function decode_html(input) {
     return e.childNodes.length === 0 ? '' : e.childNodes[0].nodeValue;
 }
 
-function demangle_body(html) {
-    return html.replace(/<div><br><\/div>/g, '\n\n')
-               .replace(/<\/div><div>/g, '\n')
-               .replace(/<br>/g, '')
-               .replace(/<\/?div>/g, '');
-}
-
 function save_output(box) {
     var tag = tags.find('.tag_lab').map(function(i, t) { return t.innerHTML; } ).toArray();
     var tit = title[0].innerText;
     var htm = body[0].innerHTML;
-    var bod = decode_html(demangle_body(htm));
+    var bod = decode_html(htm);
     send_command('save', {'file': file, 'title': tit, 'tags': tag, 'body': bod, 'create': false});
     set_modified(false);
 }
@@ -413,6 +416,9 @@ function connect_handlers() {
             return false;
         } else if ((event.keyCode == 40) && is_caret_at_end(body[0])) { // down
             output.scrollTop(output.prop('scrollHeight'));
+            return false;
+        } else if ((event.keyCode == 13) && !event.shiftKey) {
+            insert_newline();
             return false;
         } else if (!event.ctrlKey) {
             if (!(active && editing)) {
