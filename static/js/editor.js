@@ -115,7 +115,6 @@ function is_caret_at_end(element) {
 function intercept_paste(event) {
     // only get text data
     var text = event.originalEvent.clipboardData.getData('text');
-    text = text.replace(/<br>/g, '\n');
 
     // other method
     document.execCommand('insertText', false, text);
@@ -269,6 +268,10 @@ function create_tag(box) {
     });
 }
 
+function replace_newlines(text) {
+    return text.replace(/<br>/g, '\n');
+}
+
 function decode_html(input) {
     var e = document.createElement('div');
     e.innerHTML = input;
@@ -279,7 +282,7 @@ function save_output(box) {
     var tag = tags.find('.tag_lab').map(function(i, t) { return t.innerHTML; } ).toArray();
     var tit = title[0].innerText;
     var htm = body[0].innerHTML;
-    var bod = decode_html(htm);
+    var bod = decode_html(replace_newlines(htm));
     send_command('save', {'file': file, 'title': tit, 'tags': tag, 'body': bod, 'create': false});
     set_modified(false);
 }
