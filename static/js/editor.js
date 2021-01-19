@@ -1,7 +1,9 @@
 /* fuzzy editor */
 
+/*
 // begin module
 var editor = (function() {
+*/
 
 // hardcoded options
 var max_per = 5; // maximum number of matches per result
@@ -94,7 +96,7 @@ function get_caret_position(element) {
         var preCaretRange = range.cloneRange();
         preCaretRange.selectNodeContents(element);
         preCaretRange.setEnd(range.endContainer, range.endOffset);
-        caretOffset = preCaretRange.toString().length;
+        var caretOffset = preCaretRange.toString().length;
         return caretOffset;
     } else {
         return 0;
@@ -124,12 +126,21 @@ function intercept_paste(event) {
 }
 
 function insert_newline() {
-    var text = body.text();
-    var pos = get_caret_position(body[0]);
-    var text1 = text.slice(0, pos) + '\n' + text.slice(pos);
-    body.text(text1);
-    var pos1 = Math.min(pos+1, text.length);
-    set_caret_at_pos(body[0].firstChild, pos1);
+    var range = window.getSelection().getRangeAt(0);
+    var node = range.startContainer;
+    var line = node.parentElement;
+
+    var preCaretRange = range.cloneRange();
+    preCaretRange.selectNodeContents(line);
+    preCaretRange.setEnd(range.endContainer, range.endOffset);
+    var caretOffset = preCaretRange.toString().length;
+
+    var extra = node.textContent.slice(caretOffset);
+    node.textContent = node.textContent.slice(0, caretOffset);
+
+    var div = make_line(extra);
+    line.insertAdjacentElement('afterend', div[0]);
+    set_caret_at_beg(div[0]);
 }
 
 function send_command(cmd, cont) {
@@ -187,13 +198,13 @@ function render_entry(info) {
     var file = info['file'];
     var num = info['num'];
     var res = info['text'].slice(0, max_per);
-    var text = $.map(res, function(x) {
-        return x.join(': ');
-    }).join('<br/>');
-    var name = '<span class="res_name">' + file + ' (' + num + ')</span>';
     var box = $('<div>', {class: 'res_box', file: file, num: num});
-    var span = $('<span>', {class: 'res_title', html: name + '<br/>' + text});
-    box.append(span);
+    var title = $('<div>', {class: 'res_title', text: file + ' (' + num + ')'});
+    box.append(title);
+    var text = $(res).each((i, x) => {
+        var line = $('<div>', {class: 'res_text', text: x.join(': ')});
+        box.append(line);
+    });
     box.click(function(event) {
         select_entry(box);
         query.focus();
@@ -234,6 +245,10 @@ function render_results(res) {
     });
 }
 
+function make_line(text) {
+    return $('<div>', {class: 'line', text: text || '\n'});
+}
+
 function render_output(info) {
     ensure_active();
     title.text(info['title']); // to separate last title word and first tag word for spellcheck :)
@@ -242,7 +257,10 @@ function render_output(info) {
         tags.append(render_tag(s));
         tags.append(' ');
     });
-    body.text(info['body']).trigger('input');
+    body.empty();
+    info['body'].split('\n').forEach((x, i) => {
+        body.append(make_line(x));
+    });
 }
 
 function create_tag(box) {
@@ -250,8 +268,8 @@ function create_tag(box) {
     tags.append(tag);
     tags.append(' ');
     set_modified(true);
-    var lab = tag.children(".tag_lab");
-    var del = tag.children(".tag_del");
+    var lab = tag.children('.tag_lab');
+    var del = tag.children('.tag_del');
     lab.attr('contentEditable', 'true');
     set_caret_at_end(lab[0]);
     lab.keydown(function(event) {
@@ -268,10 +286,6 @@ function create_tag(box) {
     });
 }
 
-function replace_newlines(text) {
-    return text.replace(/<br>/g, '\n');
-}
-
 function decode_html(input) {
     var e = document.createElement('div');
     e.innerHTML = input;
@@ -280,9 +294,13 @@ function decode_html(input) {
 
 function save_output(box) {
     var tag = tags.find('.tag_lab').map(function(i, t) { return t.innerHTML; } ).toArray();
-    var tit = title[0].innerText;
-    var htm = body[0].innerHTML;
-    var bod = decode_html(replace_newlines(htm));
+    var tit = title.text();
+    var htm = body.children('div').map((i, x) => {
+        return x.innerHTML == '\n' ? '' : x.innerHTML;
+    }).toArray().join('\n');
+    console.log(htm);
+    var bod = decode_html(htm);
+    console.log(bod);
     send_command('save', {'file': file, 'title': tit, 'tags': tag, 'body': bod, 'create': false});
     set_modified(false);
 }
@@ -521,6 +539,7 @@ function init(config) {
     connect_handlers();
 }
 
+/*
 // public interface
 return {
     init: init
@@ -528,3 +547,4 @@ return {
 
 // end module
 })();
+*/

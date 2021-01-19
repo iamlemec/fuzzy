@@ -69,6 +69,7 @@ html::-webkit-scrollbar {
 }
 
 #output {
+    font-size: 14px;
     background: #070908;
     overflow-y: scroll;
     margin: 0px;
@@ -125,10 +126,8 @@ html::-webkit-scrollbar {
     position: relative;
     width: 100%;
     padding: 5px;
-}
-
-.res_box:last-child {
-    border-bottom: 0px;
+    cursor: default;
+    border-bottom: 1px solid #2f3c35;
 }
 
 .res_box.selected {
@@ -137,14 +136,9 @@ html::-webkit-scrollbar {
 }
 
 .res_title {
-    cursor: default;
     margin-right: 3px;
     min-height: 20px;
     width: 100%;
-}
-
-.res_name {
-    padding-right: 3px;
     font-weight: bold;
     overflow-wrap: break-word;
 }
@@ -261,4 +255,9 @@ html::-webkit-scrollbar {
     text-decoration: none;
     /*color: rgb(53, 122, 232);*/
     color: #2095F0;
+}
+
+/* line editor */
+
+.line {
 }
