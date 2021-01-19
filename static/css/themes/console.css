@@ -7,6 +7,10 @@ body, #results, #output, #body {
     color: #E7F3FD;
 }
 
+#title::selection, #body::selection {
+    background-color: #444;
+}
+
 #results {
     font-size: 12px;
 }

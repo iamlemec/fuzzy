@@ -420,7 +420,7 @@ function connect_handlers() {
         } else if ((event.keyCode == 40) && is_caret_at_end(body[0])) { // down
             output.scrollTop(output.prop('scrollHeight'));
             return false;
-        } else if ((event.keyCode == 13) && !event.shiftKey) {
+        } else if ((event.keyCode == 13) && !event.shiftKey && !event.ctrlKey) {
             insert_newline();
             return false;
         } else if (!event.ctrlKey) {
