@@ -24,7 +24,8 @@ var query = null;
 var newdoc = null;
 var delbox = null;
 
-// tools
+/* scroll tools */
+
 function is_editable(element) {
     var tag = element.tagName.toLowerCase();
     return (element.getAttribute('contentEditable') || (tag == 'input') || (tag == 'textarea'));
@@ -51,6 +52,8 @@ function ensure_visible(element) {
         results.animate({scrollTop: cell_bot - res_top - results.innerHeight() + scrollFudge}, scrollSpeed);
     }
 }
+
+/* cursor tools */
 
 function set_caret_at_beg(element) {
     var range = document.createRange();
@@ -114,6 +117,37 @@ function is_caret_at_end(element) {
     return (cpos == tlen);
 }
 
+/* line tools */
+
+function make_line(text='') {
+    var line = $('<div>', {class: 'line', text: text});
+    var br = $('<br>');
+    line.append(br);
+    return line;
+}
+
+function get_current_line() {
+    var select = window.getSelection();
+    var node = select.anchorNode;
+    if (node.id == 'body') {
+        return node.childNodes[node.childNodes.length-1];
+    } else if (node.nodeType == 1) {
+        return node;
+    } else {
+        return node.parentElement;
+    }
+}
+
+function line_summary() {
+    $('.line').each((i, elem) => {
+        var text = elem.textContent;
+        var html = elem.innerHTML;
+        console.log(text.length, html.replace('\n', '⏎'), text.replace('\n', '⏎'));
+    });
+}
+
+/* input overrides */
+
 function intercept_paste(event) {
     // only get text data
     var text = event.originalEvent.clipboardData.getData('text');
@@ -126,22 +160,31 @@ function intercept_paste(event) {
 }
 
 function insert_newline() {
-    var range = window.getSelection().getRangeAt(0);
-    var node = range.startContainer;
-    var line = node.parentElement;
+    var line = get_current_line();
+    var node = line.childNodes[0];
+    var offset = get_caret_position(line);
+    var len = node.textContent.length;
 
-    var preCaretRange = range.cloneRange();
-    preCaretRange.selectNodeContents(line);
-    preCaretRange.setEnd(range.endContainer, range.endOffset);
-    var caretOffset = preCaretRange.toString().length;
+    console.log(line, node, offset, node.textContent.length);
 
-    var extra = node.textContent.slice(caretOffset);
-    node.textContent = node.textContent.slice(0, caretOffset);
-
-    var div = make_line(extra);
-    line.insertAdjacentElement('afterend', div[0]);
-    set_caret_at_beg(div[0]);
+    if (offset == 0) {
+        var div = make_line();
+        line.insertAdjacentElement('beforebegin', div[0]);
+        set_caret_at_beg(line);
+    } else if (offset == len) {
+        var div = make_line();
+        line.insertAdjacentElement('afterend', div[0]);
+        set_caret_at_beg(div[0]);
+    } else {
+        var extra = node.textContent.slice(offset);
+        node.textContent = node.textContent.slice(0, offset);
+        var div = make_line(extra);
+        line.insertAdjacentElement('afterend', div[0]);
+        set_caret_at_beg(div[0]);
+    }
 }
+
+/* editor commands */
 
 function send_command(cmd, cont) {
     var msg = JSON.stringify({'cmd': cmd, 'content': cont});
@@ -243,10 +286,6 @@ function render_results(res) {
         var box = render_entry(bit);
         results.append(box);
     });
-}
-
-function make_line(text) {
-    return $('<div>', {class: 'line', text: text || '\n'});
 }
 
 function render_output(info) {
@@ -427,19 +466,17 @@ function connect_handlers() {
     });
 
     body.keydown(function(event) {
-        if ((event.keyCode == 37) && is_caret_at_beg(body[0])) { // left
+        if ((event.key == 'ArrowLeft') && is_caret_at_beg(body[0])) { // left
             set_caret_at_end(title[0]);
             output.scrollTop(0);
             return false;
-        } else if (((event.keyCode == 33) || (event.keyCode == 38)) && is_caret_at_beg(body[0])) { // pgup/up
+        } else if (((event.key == 'PageUp') || (event.key == 'ArrowUp')) && is_caret_at_beg(body[0])) { // pgup/up
             set_caret_at_beg(title[0]);
             output.scrollTop(0);
             return false;
-        } else if ((event.keyCode == 40) && is_caret_at_end(body[0])) { // down
-            output.scrollTop(output.prop('scrollHeight'));
-            return false;
-        } else if ((event.keyCode == 13) && !event.shiftKey) {
+        } else if ((event.key == 'Enter') && !event.shiftKey && !event.ctrlKey) {
             insert_newline();
+            line_summary();
             return false;
         } else if (!event.ctrlKey) {
             if (!(active && editing)) {
