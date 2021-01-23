@@ -120,9 +120,12 @@ function is_caret_at_end(element) {
 /* line tools */
 
 function make_line(text='') {
-    var line = $('<div>', {class: 'line', text: text});
-    var br = $('<br>');
+    var line = document.createElement('div');
+    var node = document.createTextNode(text);
+    var br = document.createElement('br');
+    line.append(node);
     line.append(br);
+    line.classList.add('line');
     return line;
 }
 
@@ -142,46 +145,88 @@ function line_summary() {
     $('.line').each((i, elem) => {
         var text = elem.textContent;
         var html = elem.innerHTML;
-        console.log(text.length, html.replace('\n', '⏎'), text.replace('\n', '⏎'));
+        console.log(
+            elem.childNodes.length,
+            text.length,
+            html.replace('\n', '⏎'),
+            text.replace('\n', '⏎')
+        );
     });
 }
 
 /* input overrides */
 
+function get_cursor_pos() {
+    var line = get_current_line();
+    var pos = get_caret_position(line);
+    return [line, pos];
+}
+
+function insert_newline(line, pos) {
+    if (line === undefined) {
+        line = get_current_line();
+    }
+    if (pos == undefined) {
+        pos = get_caret_position(line);
+    }
+
+    var node = line.childNodes[0];
+    var len = node.textContent.length;
+
+    if (pos == 0) {
+        var div = make_line();
+        line.insertAdjacentElement('beforebegin', div);
+        set_caret_at_beg(line);
+    } else if ((pos == len) || (pos == -1)) {
+        var div = make_line();
+        line.insertAdjacentElement('afterend', div);
+        set_caret_at_beg(div);
+    } else {
+        var extra = node.textContent.slice(pos);
+        node.textContent = node.textContent.slice(0, pos);
+        var div = make_line(extra);
+        line.insertAdjacentElement('afterend', div);
+        set_caret_at_beg(div);
+    }
+
+    return div;
+}
+
 function intercept_paste(event) {
     // only get text data
-    var text = event.originalEvent.clipboardData.getData('text');
+    var clip = event.originalEvent.clipboardData;
+    var html = clip.getData('text/html');
+    console.log(html);
+    var parts;
+    if (html.length == 0) {
+        parts = clip.getData('text').split('\n');
+    } else {
+        parts = $(html).toArray().map(x => x.textContent);
+    }
 
-    // other method
-    document.execCommand('insertText', false, text);
+    var [line, pos] = get_cursor_pos();
+    var node = line.childNodes[0];
+
+    var tail = node.textContent.slice(pos);
+    node.textContent = node.textContent.slice(0, pos);
+
+    var fpos = parts.length == 1 ? pos : 0;
+
+    parts.forEach((x, i) => {
+        console.log(line, x);
+        node.textContent += x;
+        if (i != parts.length - 1) {
+            line = insert_newline(line, -1);
+            node = line.childNodes[0];
+        } else {
+            fpos += x.length;
+            node.textContent += tail;
+            set_caret_at_pos(node, fpos);
+        }
+    });
 
     // stop normal paste
     event.preventDefault();
-}
-
-function insert_newline() {
-    var line = get_current_line();
-    var node = line.childNodes[0];
-    var offset = get_caret_position(line);
-    var len = node.textContent.length;
-
-    console.log(line, node, offset, node.textContent.length);
-
-    if (offset == 0) {
-        var div = make_line();
-        line.insertAdjacentElement('beforebegin', div[0]);
-        set_caret_at_beg(line);
-    } else if (offset == len) {
-        var div = make_line();
-        line.insertAdjacentElement('afterend', div[0]);
-        set_caret_at_beg(div[0]);
-    } else {
-        var extra = node.textContent.slice(offset);
-        node.textContent = node.textContent.slice(0, offset);
-        var div = make_line(extra);
-        line.insertAdjacentElement('afterend', div[0]);
-        set_caret_at_beg(div[0]);
-    }
 }
 
 /* editor commands */
@@ -332,14 +377,10 @@ function decode_html(input) {
 }
 
 function save_output(box) {
-    var tag = tags.find('.tag_lab').map(function(i, t) { return t.innerHTML; } ).toArray();
+    var tag = tags.find('.tag_lab').toArray().map(t => t.innerHTML);
     var tit = title.text();
-    var htm = body.children('div').map((i, x) => {
-        return x.innerHTML == '\n' ? '' : x.innerHTML;
-    }).toArray().join('\n');
-    console.log(htm);
+    var htm = body.children('.line').toArray().map(x => x.textContent).join('\n');
     var bod = decode_html(htm);
-    console.log(bod);
     send_command('save', {'file': file, 'title': tit, 'tags': tag, 'body': bod, 'create': false});
     set_modified(false);
 }
