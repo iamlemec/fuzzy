@@ -1,8 +1,8 @@
 @import url('source-sans-pro.css');
 
 :root {
-    --cool-blue: #4284F2;
-    --cool-red: #CC3D57;
+    --cool-blue: #1e88e5;
+    --cool-red: #ff0d57;
     --hover-opacity: 0.75;
 }
 
@@ -142,12 +142,12 @@ html::-webkit-scrollbar {
     margin-right: 3px;
     min-height: 20px;
     width: 100%;
+    font-weight: bold;
 }
 
-.res_name {
-    padding-right: 3px;
-    font-weight: bold;
-    overflow-wrap: break-word;
+.res_match {
+    white-space: nowrap;
+    overflow-x: hidden;
 }
 
 .tag_box {

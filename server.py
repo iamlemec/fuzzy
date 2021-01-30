@@ -14,6 +14,7 @@ import traceback
 import subprocess as sub
 import shutil
 from collections import OrderedDict
+from bs4 import BeautifulSoup
 
 import tornado.ioloop
 import tornado.web
@@ -93,7 +94,10 @@ def standardize_name(name):
 def command_output(cmd, cwd=None):
     with sub.Popen(cmd, shell=True, cwd=cwd, stdout=sub.PIPE) as proc:
         outp, _ = proc.communicate()
-    return outp.decode()
+    return outp.decode(errors='replace')
+
+def html_to_text(html):
+    return BeautifulSoup(html, 'lxml').text
 
 # searching
 def make_result(fpath, query, info):
@@ -111,8 +115,7 @@ def search(words, subpath, block=True):
     for line in outp.split('\n'):
         if len(line) > 0:
             fpath, line, text = line.split(':', maxsplit=2)
-            if len(text) > max_len - 3:
-                text = text[:max_len-3] + '...'
+            fpath = html_to_text(fpath)
             infodict.setdefault(fpath, []).append((line, text))
 
     return [make_result(frela, words, info) for frela, info in infodict.items()]
@@ -120,10 +123,13 @@ def search(words, subpath, block=True):
 # input
 def match_lines(fname, words):
     outp = command_output(cmd_filter % {'filename': fname, 'words': words})
+    if len(outp.strip()) == 0:
+        return {}
     match = dict([line.split(':', maxsplit=1) for line in outp.strip().split('\n')])
-    if not fzf_local:
-        match = {num: wrap_match(line) for num, line in match.items()}
-    return match
+    if fzf_local:
+        return {int(num): line for num, line in match.items()}
+    else:
+        return {int(num): wrap_match(line) for num, line in match.items()}
 
 def load_file(fpath, words):
     # read file usual way + escape html
@@ -133,7 +139,7 @@ def load_file(fpath, words):
 
     # get matched lines, ignore header line and empty lines
     match = match_lines(fpath, words)
-    match = {int(num): line for num, line in match.items() if num != 0 and len(line) > 0}
+    match = {num: line for num, line in match.items() if num != 1 and len(line) > 0}
 
     # merge in matches
     lines = [match[num] if num in match else plain[num] for num in plain]

@@ -144,9 +144,6 @@ function select_entry(box) {
     ensure_visible(box);
     var newfile = box.attr('file');
     var query = box.attr('query');
-    if (newfile == file) {
-        return;
-    }
     send_command('text', {'file': newfile, 'query': query});
 }
 
@@ -189,13 +186,13 @@ function render_entry(info) {
     var query = info['query'];
     var num = info['num'];
     var res = info['text'].slice(0, max_per);
-    var text = $.map(res, function(x) {
-        return x.join(': ');
-    }).join('<br/>');
-    var name = '<span class="res_name">' + file + ' (' + num + ')</span>';
     var box = $('<div>', {class: 'res_box', file: file, query: query, num: num});
-    var span = $('<span>', {class: 'res_title', html: name + '<br/>' + text});
-    box.append(span);
+    var title = $('<div>', {class: 'res_title', html: file + ' (' + num + ')'});
+    var match = $.map(res, function(x) {
+        return $('<div>', {class: 'res_match', html: x.join(': ')});
+    });
+    box.append(title);
+    box.append(match);
     box.click(function(event) {
         select_entry(box);
         query.focus();
@@ -492,13 +489,6 @@ function connect_handlers() {
                 query.focus();
                 return false;
             }
-        }
-    });
-
-    $(document).unbind('click').bind('click', function(event) {
-        if (!(editing && active)) {
-            query.focus();
-            return false;
         }
     });
 }
