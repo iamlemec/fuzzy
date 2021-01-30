@@ -43,11 +43,16 @@ max_res = 100
 # possibly use local fzf
 fzf_path0 = os.path.abspath('fzf/bin/fzf')
 fzf_local = os.path.exists(fzf_path0)
-fzf_path = fzf_path0 if fzf_local else 'fzf'
+if fzf_local:
+    fzf_path = fzf_path0
+    fzf_args = '--highlight html'
+else:
+    fzf_path = 'fzf'
+    fzf_args = ''
 
 # search tools
-cmd_search = f'ag --follow --nobreak --noheading ".+" | {fzf_path} -f "%(words)s" | head -n %(max_res)d'
-cmd_filter = f'ag --follow --nobreak --noheading --nofilename --number ".+" "%(filename)s" | {fzf_path} -f "%(words)s"'
+cmd_search = f'ag --follow --nobreak --noheading ".+" | {fzf_path} -f "%(words)s" {fzf_args} | head -n %(max_res)d'
+cmd_filter = f'ag --follow --nobreak --noheading --nofilename --number ".+" "%(filename)s" | {fzf_path} -f "%(words)s" {fzf_args}'
 wrap_match = lambda s: f'<span class="match">{html.escape(s)}</span>'
 
 # full content path
