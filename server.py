@@ -5,6 +5,7 @@
 import re
 import os
 import json
+import html
 import operator
 import random
 import shutil
@@ -38,8 +39,17 @@ tmp_dir = 'temp'
 max_len = 90
 max_res = 100
 
+# possibly use local fzf
+fzf_path0 = os.path.abspath('fzf/bin/fzf')
+fzf_local = os.path.exists(fzf_path0)
+fzf_path = fzf_path0 if fzf_local else 'fzf'
+
 # search tools
-cmd = 'ag --follow --nobreak --noheading ".+" | fzf -f "%(words)s" | head -n %(max_res)d'
+cmd_search = f'ag --follow --nobreak --noheading ".+" | {fzf_path} -f "%(words)s" | head -n %(max_res)d'
+cmd_filter = f'ag --follow --nobreak --noheading --nofilename --number ".+" "%(filename)s" | {fzf_path} -f "%(words)s"'
+wrap_match = lambda s: f'<span class="match">{html.escape(s)}</span>'
+
+# full content path
 normpath = os.path.normpath(args.path)
 
 # randomization
@@ -80,53 +90,74 @@ def standardize_name(name):
     name = name.strip('_')
     return name
 
+def command_output(cmd, cwd=None):
+    with sub.Popen(cmd, shell=True, cwd=cwd, stdout=sub.PIPE) as proc:
+        outp, _ = proc.communicate()
+    return outp.decode()
+
 # searching
-def make_result(fpath, info):
+def make_result(fpath, query, info):
     return {
         'file': fpath,
+        'query': query,
         'num': len(info),
         'text': [(i, t) for i, t in info]
     }
 
 def search(words, subpath, block=True):
-    query = cmd % dict(words=words, max_res=max_res)
-    with sub.Popen(query, shell=True, cwd=subpath, stdout=sub.PIPE) as proc:
-        outp, _ = proc.communicate()
+    outp = command_output(cmd_search % {'words': words, 'max_res': max_res}, cwd=subpath)
 
     infodict = OrderedDict()
-    for line in outp.decode().split('\n'):
+    for line in outp.split('\n'):
         if len(line) > 0:
             fpath, line, text = line.split(':', maxsplit=2)
             if len(text) > max_len - 3:
                 text = text[:max_len-3] + '...'
             infodict.setdefault(fpath, []).append((line, text))
 
-    return [make_result(frela, info) for frela, info in infodict.items()]
+    return [make_result(frela, words, info) for frela, info in infodict.items()]
 
 # input
-def load_file(fpath):
+def match_lines(fname, words):
+    outp = command_output(cmd_filter % {'filename': fname, 'words': words})
+    match = dict([line.split(':', maxsplit=1) for line in outp.strip().split('\n')])
+    if not fzf_local:
+        match = {num: wrap_match(line) for num, line in match.items()}
+    return match
+
+def load_file(fpath, words):
+    # read file usual way + escape html
     with open(fpath) as fid:
         text = fid.read()
+    plain = {num+1: html.escape(line) for num, line in enumerate(text.split('\n'))}
 
+    # get matched lines, ignore header line and empty lines
+    match = match_lines(fpath, words)
+    match = {int(num): line for num, line in match.items() if num != 0 and len(line) > 0}
+
+    # merge in matches
+    lines = [match[num] if num in match else plain[num] for num in plain]
+
+    # split header off
+    head, body = bsplit(lines)
+
+    # handle tags in header vs on next line
     if args.sep:
-        title, rest = bsplit(text)
-        if rest.lstrip().startswith(args.tag):
-            tags, body = bsplit(rest.lstrip())
+        if rest[0].lstrip().startswith(args.tag):
+            tags, body = bsplit(rest)
             tags = [s[1:] for s in tags.split() if s.startswith(args.tag)]
         else:
             body = rest
             tags = []
-        body = body[1:] if body.startswith('\n') else body
     else:
-        if text.startswith('#!'):
-            text = text[2:].lstrip()
-        else:
-            text = text[1:].lstrip()
-        head, body = bsplit(text)
-        head = head.split()
+        cut = 2 if head.startswith('#!') else 1
+        head = head[cut:].lstrip().split()
         title = ' '.join([s for s in head if not s.startswith(args.tag)])
         tags = [s[1:] for s in head if s.startswith(args.tag)]
-        body = body[1:] if body.startswith('\n') else body
+
+    # merge back body
+    body = body[1:] if body[0] == '' else body
+    body = '\n'.join(body)
 
     return {'title': title, 'tags': tags, 'body': body}
 
@@ -184,11 +215,11 @@ def delete_file(fpath):
         print(f'Cannot remove directory: {fpath}')
 
 # text tools
-def bsplit(s, sep='\n'):
-    if sep not in s:
-        return s, ''
+def bsplit(lines, num=1):
+    if len(lines) > 1:
+        return lines[0], lines[1:]
     else:
-        return s.split(sep, maxsplit=1)
+        return lines[0], ['']
 
 # authorization handlers
 class AuthLoginHandler(tornado.web.RequestHandler):
@@ -281,11 +312,11 @@ class FuzzyHandler(tornado.websocket.WebSocketHandler):
                 ret = list(search(cont, self.fullpath))
                 self.write_json({'cmd': 'results', 'content': ret})
             elif cmd == 'text':
-                fname = cont['file']
+                fname, query = cont['file'], cont['query']
                 print(f'Loading: {fname}')
                 fpath = os.path.join(self.fullpath, fname)
                 if validate_path(fpath):
-                    info = load_file(fpath)
+                    info = load_file(fpath, query)
                     self.write_json({'cmd': 'text', 'content': dict(file=fname, **info)})
                 else:
                     print(f'Invalid load path: {fpath}')

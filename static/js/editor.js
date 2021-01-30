@@ -143,10 +143,11 @@ function select_entry(box) {
     box.addClass('selected');
     ensure_visible(box);
     var newfile = box.attr('file');
+    var query = box.attr('query');
     if (newfile == file) {
         return;
     }
-    send_command('text', {'file': newfile});
+    send_command('text', {'file': newfile, 'query': query});
 }
 
 function is_modified() {
@@ -185,13 +186,14 @@ function ensure_inactive() {
 
 function render_entry(info) {
     var file = info['file'];
+    var query = info['query'];
     var num = info['num'];
     var res = info['text'].slice(0, max_per);
     var text = $.map(res, function(x) {
         return x.join(': ');
     }).join('<br/>');
     var name = '<span class="res_name">' + file + ' (' + num + ')</span>';
-    var box = $('<div>', {class: 'res_box', file: file, num: num});
+    var box = $('<div>', {class: 'res_box', file: file, query: query, num: num});
     var span = $('<span>', {class: 'res_title', html: name + '<br/>' + text});
     box.append(span);
     box.click(function(event) {
@@ -242,7 +244,7 @@ function render_output(info) {
         tags.append(render_tag(s));
         tags.append(' ');
     });
-    body.text(info['body']).trigger('input');
+    body.html(info['body']).trigger('input');
 }
 
 function create_tag(box) {

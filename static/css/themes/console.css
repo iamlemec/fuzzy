@@ -1,14 +1,27 @@
+:root {
+    --bg-color: #212121;
+    --fg-color: #F7F3FD;
+}
+
 html, input {
     font-family: monospace;
 }
 
 body, #results, #output, #body {
-    background: #212121;
-    color: #E7F3FD;
+    background-color: var(--bg-color);
+    color: var(--fg-color);
 }
 
-#title::selection, #body::selection {
+#title::selection, #body::selection, .match::selection {
     background-color: #444;
+}
+
+#tags::selection {
+    background-color: var(--bg-color);
+}
+
+.tag_lab::selection {
+    background-color: rgba(0.25, 0.25, 0.25, 0.5);
 }
 
 #results {

@@ -2,6 +2,7 @@
 
 :root {
     --cool-blue: #4284F2;
+    --cool-red: #CC3D57;
     --hover-opacity: 0.75;
 }
 
@@ -246,19 +247,12 @@ html::-webkit-scrollbar {
     visibility: visible;
 }
 
-/* body language */
+/* match */
 
-#body {
+#output .match {
+    color: var(--cool-red);
 }
 
-/* theme */
-
-#output h3 {
-    margin-top: 35px;
-}
-
-#output a {
-    text-decoration: none;
-    /*color: rgb(53, 122, 232);*/
-    color: #2095F0;
+#results .match {
+    color: var(--cool-red);
 }
