@@ -131,10 +131,7 @@ def match_lines(fname, words):
     if len(outp.strip()) == 0:
         return {}
     match = dict([line.split(':', maxsplit=1) for line in outp.strip().split('\n')])
-    if fzf_local:
-        return {int(num): line for num, line in match.items()}
-    else:
-        return {int(num): wrap_match(line) for num, line in match.items()}
+    return {int(num): line for num, line in match.items()}
 
 def load_file(fpath, words):
     # read file usual way + escape html
