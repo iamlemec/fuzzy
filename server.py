@@ -32,7 +32,7 @@ parser.add_argument('--edit', action='store_true', help='enable editing mode')
 parser.add_argument('--rename', action='store_true', help='rename files based on title (experimental, no subdirs)')
 parser.add_argument('--demo', type=str, default=None, help='enable demo mode')
 parser.add_argument('--auth', type=str, default=None, help='authorization file to use')
-parser.add_argument('--theme', type=str, default='default', help='Theme CSS file to use')
+parser.add_argument('--theme', type=str, default='console', help='Theme CSS file to use')
 args = parser.parse_args()
 
 # hardcoded
