@@ -8,6 +8,13 @@ High performance note taking with fuzzy search. Powered by [fzf](https://github.
 
 First install [fzf](https://github.com/junegunn/fzf) and [the silver searcher (ag)](https://github.com/ggreer/the_silver_searcher) and  make sure they're in your path. The only non-standard Python package requirement is `tornado`. Finally, clone this repository locally.
 
+To enable highlighting, you need to use a custom `fzf` locally. First install `make` and `go`, then run
+```
+git submodule init
+git submodule update
+make -C fzf install
+```
+
 # Running
 
 To use Fuzzy in editing mode, run the command
