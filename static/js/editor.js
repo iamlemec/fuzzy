@@ -132,6 +132,10 @@ function insert_newline() {
     set_caret_at_pos(body[0].firstChild, pos1);
 }
 
+function remove_highlight() {
+    body.find('.match').replaceWith((i, x) => x);
+}
+
 function send_command(cmd, cont) {
     var msg = JSON.stringify({'cmd': cmd, 'content': cont});
     ws.send(msg);
@@ -183,10 +187,10 @@ function ensure_inactive() {
 
 function render_entry(info) {
     var file = info['file'];
-    var query = info['query'];
+    var words = info['query'];
     var num = info['num'];
     var res = info['text'].slice(0, max_per);
-    var box = $('<div>', {class: 'res_box', file: file, query: query, num: num});
+    var box = $('<div>', {class: 'res_box', file: file, query: words, num: num});
     var title = $('<div>', {class: 'res_title', html: file + ' (' + num + ')'});
     var match = $.map(res, function(x) {
         return $('<div>', {class: 'res_match', html: x.join(': ')});
@@ -241,7 +245,7 @@ function render_output(info) {
         tags.append(render_tag(s));
         tags.append(' ');
     });
-    body.html(info['body']).trigger('input');
+    body.html(info['body']);
 }
 
 function create_tag(box) {
@@ -274,7 +278,7 @@ function replace_newlines(text) {
 function decode_html(input) {
     var e = document.createElement('div');
     e.innerHTML = input;
-    return e.childNodes.length === 0 ? '' : e.childNodes[0].nodeValue;
+    return e.textContent;
 }
 
 function save_output(box) {
@@ -421,6 +425,7 @@ function connect_handlers() {
             return false;
         } else if ((event.keyCode == 13) && !event.shiftKey && !event.ctrlKey) {
             insert_newline();
+            set_modified(true);
             return false;
         } else if (!event.ctrlKey) {
             if (!(active && editing)) {
@@ -437,6 +442,7 @@ function connect_handlers() {
     output.bind('input', function() {
         if (active && editing) {
             set_modified(true);
+            remove_highlight();
         }
     });
 
