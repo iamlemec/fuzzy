@@ -116,6 +116,7 @@ html::-webkit-scrollbar {
 
 #results {
     scrollbar-width: none;
+    cursor: default;
 }
 
 #output {
@@ -138,7 +139,6 @@ html::-webkit-scrollbar {
 }
 
 .res_title {
-    cursor: default;
     margin-right: 3px;
     min-height: 20px;
     width: 100%;
