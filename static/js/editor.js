@@ -112,24 +112,24 @@ function is_caret_at_end(element) {
     return (cpos == tlen);
 }
 
+function insert_at_cursor(text) {
+    var btext = body.text();
+    var pos = get_caret_position(body[0]);
+    var text1 = btext.slice(0, pos) + text + btext.slice(pos);
+    body.text(text1);
+    var pos1 = pos + text.length;
+    set_caret_at_pos(body[0].firstChild, pos1);
+}
+
 function intercept_paste(event) {
     // only get text data
     var text = event.originalEvent.clipboardData.getData('text');
 
-    // other method
-    document.execCommand('insertText', false, text);
+    // insert new text
+    insert_at_cursor(text);
 
     // stop normal paste
     event.preventDefault();
-}
-
-function insert_newline() {
-    var text = body.text();
-    var pos = get_caret_position(body[0]);
-    var text1 = text.slice(0, pos) + '\n' + text.slice(pos);
-    body.text(text1);
-    var pos1 = Math.min(pos+1, text.length);
-    set_caret_at_pos(body[0].firstChild, pos1);
 }
 
 function remove_highlight() {
@@ -424,7 +424,7 @@ function connect_handlers() {
             output.scrollTop(output.prop('scrollHeight'));
             return false;
         } else if ((event.keyCode == 13) && !event.shiftKey && !event.ctrlKey) {
-            insert_newline();
+            insert_at_cursor('\n');
             set_modified(true);
             return false;
         } else if (!event.ctrlKey) {
