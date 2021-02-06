@@ -102,7 +102,7 @@ def command_output(cmd, cwd=None):
     return outp.decode(errors='replace')
 
 def html_to_text(html):
-    return BeautifulSoup(html, 'lxml').text
+    return BeautifulSoup(html, 'html.parser').text
 
 # searching
 def make_result(fpath, query, info):
