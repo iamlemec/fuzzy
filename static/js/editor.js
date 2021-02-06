@@ -112,13 +112,56 @@ function is_caret_at_end(element) {
     return (cpos == tlen);
 }
 
+function get_current_line() {
+    var range = window.getSelection();
+    var node = range.focusNode;
+    var elem;
+    if (node.nodeType == 1) {
+        elem = node;
+    } else {
+        elem = node.parentElement;
+    }
+    return $(elem).closest('.line')[0];
+}
+
+function make_line(text='') {
+    var div = document.createElement('div');
+    div.innerHTML = text || '\n';
+    div.classList.add('line');
+    return div;
+}
+
+// this kills off highlighting within affected line
 function insert_at_cursor(text) {
-    var btext = body.text();
-    var pos = get_caret_position(body[0]);
-    var text1 = btext.slice(0, pos) + text + btext.slice(pos);
-    body.text(text1);
-    var pos1 = pos + text.length;
-    set_caret_at_pos(body[0].firstChild, pos1);
+    var line = get_current_line();
+    var pos = get_caret_position(line);
+    var extra = line.textContent.slice(pos);
+
+    if (pos == 0) {
+        line.textContent = '\n';
+    } else {
+        line.textContent = line.textContent.slice(0, pos);
+    }
+
+    var div = line;
+    text.split('\n').forEach((x, i) => {
+        if (i == 0) {
+            line.textContent += x;
+        } else {
+            var next = make_line(x);
+            div.insertAdjacentElement('afterend', next);
+            div = next;
+        }
+        console.log(div);
+    });
+
+    if (div.textContent == '\n') {
+        div.textContent = extra;
+    } else {
+        div.textContent += extra;
+    }
+
+    set_caret_at_beg(div);
 }
 
 function intercept_paste(event) {
@@ -132,8 +175,13 @@ function intercept_paste(event) {
     event.preventDefault();
 }
 
-function remove_highlight() {
-    body.find('.match').replaceWith((i, x) => x);
+function remove_highlight(elem) {
+    var match = $(elem).find('.match');
+    if (match.length > 0) {
+        var pos = get_caret_position(elem);
+        elem.textContent = elem.textContent;
+        set_caret_at_pos(elem.childNodes[0], pos);
+    }
 }
 
 function send_command(cmd, cont) {
@@ -245,7 +293,10 @@ function render_output(info) {
         tags.append(render_tag(s));
         tags.append(' ');
     });
-    body.html(info['body']);
+    body.empty();
+    info['body'].split('\n').forEach((x, i) => {
+        body.append(make_line(x));
+    });
 }
 
 function create_tag(box) {
@@ -283,9 +334,11 @@ function decode_html(input) {
 
 function save_output(box) {
     var tag = tags.find('.tag_lab').map(function(i, t) { return t.innerHTML; } ).toArray();
-    var tit = title[0].innerText;
-    var htm = body[0].innerHTML;
-    var bod = decode_html(replace_newlines(htm));
+    var tit = title.text();
+    var htm = body.children('div').map((i, x) => {
+        return x.innerHTML == '\n' ? '' : x.innerHTML;
+    }).toArray().join('\n');
+    var bod = decode_html(htm);
     send_command('save', {'file': file, 'title': tit, 'tags': tag, 'body': bod, 'create': false});
     set_modified(false);
 }
@@ -439,10 +492,16 @@ function connect_handlers() {
     body.bind('paste', intercept_paste);
 
     // detect modification
-    output.bind('input', function() {
+    output.bind('input', function(evt) {
         if (active && editing) {
+            console.log(evt);
+            var line = get_current_line();
+            remove_highlight(line);
+            var text = line.textContent;
+            if (text.endsWith('\n')) {
+                line.textContent = text.slice(0, -1);
+            }
             set_modified(true);
-            remove_highlight();
         }
     });
 
