@@ -1,7 +1,9 @@
 /* fuzzy editor */
 
+/*
 // begin module
 var editor = (function() {
+*/
 
 // hardcoded options
 var max_per = 5; // maximum number of matches per result
@@ -79,6 +81,7 @@ function select_all(element) {
 }
 
 function set_caret_at_pos(element, pos) {
+    // console.log(element, element.childNodes.length, element.textContent.length, pos);
     var range = document.createRange();
     range.setStart(element, pos);
     range.setEnd(element, pos);
@@ -117,7 +120,11 @@ function get_current_line() {
     var node = range.focusNode;
     var elem;
     if (node.nodeType == 1) {
-        elem = node;
+        if (node == body[0]) {
+            elem = body.children('.line').last()[0];
+        } else {
+            elem = node;
+        }
     } else {
         elem = node.parentElement;
     }
@@ -131,12 +138,38 @@ function make_line(text='') {
     return div;
 }
 
+function append_to_line(line, text) {
+    if (line.textContent == '\n') {
+        if (text.length > 0) {
+            line.textContent = text;
+        }
+    } else {
+        line.textContent += text;
+    }
+}
+
+function strip_newline(line) {
+    var pos = get_caret_position(line);
+    var text = line.textContent;
+    if (text == '\n') {
+        return;
+    }
+    if (text.endsWith('\n')) {
+        line.textContent = text.slice(0, -1);
+    }
+    if (text.startsWith('\n')) {
+        line.textContent = text.slice(1);
+        pos -= 1;
+    }
+    set_caret_at_pos(line.childNodes[0], pos);
+}
+
 // this kills off highlighting within affected line
 function insert_at_cursor(text) {
     var line = get_current_line();
     var pos = get_caret_position(line);
-    var extra = line.textContent.slice(pos);
 
+    var extra = line.textContent.slice(pos);
     if (pos == 0) {
         line.textContent = '\n';
     } else {
@@ -146,22 +179,18 @@ function insert_at_cursor(text) {
     var div = line;
     text.split('\n').forEach((x, i) => {
         if (i == 0) {
-            line.textContent += x;
+            append_to_line(div, x);
+            pos += x.length;
         } else {
             var next = make_line(x);
+            pos = x.length;
             div.insertAdjacentElement('afterend', next);
             div = next;
         }
-        console.log(div);
     });
 
-    if (div.textContent == '\n') {
-        div.textContent = extra;
-    } else {
-        div.textContent += extra;
-    }
-
-    set_caret_at_beg(div);
+    append_to_line(div, extra);
+    set_caret_at_pos(div.childNodes[0], pos);
 }
 
 function intercept_paste(event) {
@@ -169,7 +198,10 @@ function intercept_paste(event) {
     var text = event.originalEvent.clipboardData.getData('text');
 
     // insert new text
-    insert_at_cursor(text);
+    if (text.length > 0) {
+        insert_at_cursor(text);
+        set_modified(true);
+    }
 
     // stop normal paste
     event.preventDefault();
@@ -182,6 +214,10 @@ function remove_highlight(elem) {
         elem.textContent = elem.textContent;
         set_caret_at_pos(elem.childNodes[0], pos);
     }
+}
+
+function delete_line(line) {
+    $(line).remove();
 }
 
 function send_command(cmd, cont) {
@@ -320,10 +356,6 @@ function create_tag(box) {
     lab.focusout(function() {
         lab.attr('contentEditable', 'false');
     });
-}
-
-function replace_newlines(text) {
-    return text.replace(/<br>/g, '\n');
 }
 
 function decode_html(input) {
@@ -480,6 +512,16 @@ function connect_handlers() {
             insert_at_cursor('\n');
             set_modified(true);
             return false;
+        } else if (event.keyCode == 8) {
+            var line = get_current_line();
+            var text = line.textContent;
+            if ((text.length == 1) && (text != '\n')) {
+                line.textContent = '\n';
+                return false;
+            } else if (text == '\n') {
+                delete_line(line);
+                return false;
+            }
         } else if (!event.ctrlKey) {
             if (!(active && editing)) {
                 return false;
@@ -494,13 +536,9 @@ function connect_handlers() {
     // detect modification
     output.bind('input', function(evt) {
         if (active && editing) {
-            console.log(evt);
             var line = get_current_line();
             remove_highlight(line);
-            var text = line.textContent;
-            if (text.endsWith('\n')) {
-                line.textContent = text.slice(0, -1);
-            }
+            strip_newline(line);
             set_modified(true);
         }
     });
@@ -578,6 +616,7 @@ function init(config) {
     connect_handlers();
 }
 
+/*
 // public interface
 return {
     init: init
@@ -585,3 +624,4 @@ return {
 
 // end module
 })();
+*/
