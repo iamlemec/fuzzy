@@ -62,7 +62,6 @@ function set_caret_at_beg(element) {
 }
 
 function set_caret_at_end(element) {
-    element.focus();
     var range = document.createRange();
     range.selectNodeContents(element);
     range.collapse(false);
@@ -121,6 +120,7 @@ function get_current_line() {
     var elem;
     if (node.nodeType == 1) {
         if (node == body[0]) {
+            console.log('get_current_line: in main body');
             elem = body.children('.line').last()[0];
         } else {
             elem = node;
@@ -216,8 +216,19 @@ function remove_highlight(elem) {
     }
 }
 
-function delete_line(line) {
-    $(line).remove();
+function delete_line(line, move) {
+    var next;
+    if (move == 'up') {
+        next = line.previousElementSibling;
+    } else if (move == 'down') {
+        next = line.nextElementSibling;
+    }
+    line.remove();
+    if (move == 'up') {
+        set_caret_at_end(next.childNodes[0]);
+    } else if (move == 'down') {
+        set_caret_at_beg(next.childNodes[0]);
+    }
 }
 
 function send_command(cmd, cont) {
@@ -519,7 +530,7 @@ function connect_handlers() {
                 line.textContent = '\n';
                 return false;
             } else if (text == '\n') {
-                delete_line(line);
+                delete_line(line, 'up');
                 return false;
             }
         } else if (!event.ctrlKey) {
