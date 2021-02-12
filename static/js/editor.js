@@ -82,6 +82,15 @@ function set_cursor_pos(elem, pos) {
     sel.addRange(range);
 }
 
+function get_line_len(line) {
+    var text = line.textContent;
+    if (text == '\n') {
+        return 0;
+    } else {
+        return text.length;
+    }
+}
+
 function get_cursor_pos(elem) {
     sel = window.getSelection();
     if (sel.rangeCount > 0) {
@@ -102,7 +111,7 @@ function get_cursor_beg(elem) {
 
 function get_cursor_end(elem) {
     var pos = get_cursor_pos(elem);
-    var len = elem.textContent.length;
+    var len = get_line_len(elem);
     return (pos == len);
 }
 
@@ -128,6 +137,16 @@ function make_line(text='') {
     div.innerHTML = text || '\n';
     div.classList.add('line');
     return div;
+}
+
+function prepend_to_line(line, text) {
+    if (line.textContent == '\n') {
+        if (text.length > 0) {
+            line.textContent = text;
+        }
+    } else {
+        line.textContent = text + line.textContent;
+    }
 }
 
 function append_to_line(line, text) {
@@ -210,12 +229,16 @@ function delete_line(line, move) {
     } else if (move == 'down') {
         next = line.nextElementSibling;
     }
+    if (next === null) {
+        return null;
+    }
     line.remove();
     if (move == 'up') {
         set_cursor_end(next);
     } else if (move == 'down') {
         set_cursor_beg(next);
     }
+    return next;
 }
 
 function send_command(cmd, cont) {
@@ -343,7 +366,7 @@ function create_tag(box) {
     lab.attr('contentEditable', 'true');
     set_cursor_end(lab[0]);
     lab.keydown(function(event) {
-        if (event.keyCode == 13) {
+        if (event.key == 'Enter') {
             lab.attr('contentEditable', 'false');
             body.focus();
             if (!event.metaKey) {
@@ -442,7 +465,7 @@ function connect_handlers() {
     query.focus();
 
     query.keypress(function(event) {
-        if (event.keyCode == 13) { // return
+        if (event.key == 'Enter') {
             var text = query.val();
             if (event.ctrlKey) {
                 send_command('create', {'title': text});
@@ -470,12 +493,12 @@ function connect_handlers() {
     });
 
     output.keypress(function(event) {
-        if (((event.keyCode == 10) || (event.keyCode == 13)) && event.shiftKey) { // shift + return
+        if ((event.key == 'Enter') && event.shiftKey) {
             if (is_modified()) {
                 save_output();
             }
             return false;
-        } else if (((event.keyCode == 10) || (event.keyCode == 13)) && event.ctrlKey) { // control + return
+        } else if ((event.key == 'Enter') && event.ctrlKey) {
             if (active) {
                 create_tag();
             }
@@ -483,11 +506,11 @@ function connect_handlers() {
     });
 
     title.keydown(function(event) {
-        if (event.keyCode == 13) { // return
+        if (event.key == 'Enter') {
             if (!event.shiftKey && !event.metaKey && !event.ctrlKey) {
                 return false;
             }
-        } else if ((event.keyCode == 34) || (event.keyCode == 40) || ((event.keyCode == 39) && get_cursor_end(title[0]))) { // pgdn/down/right
+        } else if ((event.key == 'PageDown') || (event.key == 'ArrowDown') || ((event.key == 'ArrowRight') && get_cursor_end(title[0]))) {
             set_cursor_beg(body[0]);
             output.scrollTop(0);
             return false;
@@ -495,29 +518,69 @@ function connect_handlers() {
     });
 
     body.keydown(function(event) {
-        if ((event.keyCode == 37) && get_cursor_beg(body[0])) { // left
+        if ((event.key == 'ArrowLeft') && get_cursor_beg(body[0])) {
             set_cursor_end(title[0]);
             output.scrollTop(0);
             return false;
-        } else if (((event.keyCode == 33) || (event.keyCode == 38)) && get_cursor_beg(body[0])) { // pgup/up
+        } else if (((event.key == 'PageUp') || (event.key == 'ArrowUp')) && get_cursor_beg(body[0])) {
             set_cursor_beg(title[0]);
             output.scrollTop(0);
             return false;
-        } else if ((event.keyCode == 40) && get_cursor_end(body[0])) { // down
+        } else if ((event.key == 'ArrowDown') && get_cursor_end(body[0])) {
             output.scrollTop(output.prop('scrollHeight'));
             return false;
-        } else if ((event.keyCode == 13) && !event.shiftKey && !event.ctrlKey) {
+        } else if ((event.key == 'Enter') && !event.shiftKey && !event.ctrlKey) {
             insert_at_cursor('\n');
             set_modified(true);
             return false;
-        } else if (event.keyCode == 8) {
+        } else if (event.key == 'Backspace') {
             var line = get_current_line();
             var text = line.textContent;
-            if ((text.length == 1) && (text != '\n')) {
-                line.textContent = '\n';
-                return false;
-            } else if (text == '\n') {
+            if (text == '\n') {
                 delete_line(line, 'up');
+                if (next !== null) {
+                    set_modified(true);
+                }
+                return false;
+            }
+            if (get_cursor_beg(line)) {
+                var next = delete_line(line, 'up');
+                if (next !== null) {
+                    var len = get_line_len(next);
+                    append_to_line(next, text);
+                    set_cursor_pos(next, len);
+                    set_modified(true);
+                }
+                return false;
+            }
+            if (text.length == 1) {
+                line.textContent = '\n';
+                set_modified(true);
+                return false;
+            }
+        } else if (event.key == 'Delete') {
+            var line = get_current_line();
+            var text = line.textContent;
+            if (text == '\n') {
+                var next = delete_line(line, 'down');
+                if (next !== null) {
+                    set_modified(true);
+                }
+                return false;
+            }
+            if (get_cursor_end(line)) {
+                var len = get_cursor_pos(line);
+                var next = delete_line(line, 'down');
+                if (next !== null) {
+                    prepend_to_line(next, text);
+                    set_cursor_pos(next, len);
+                    set_modified(true);
+                }
+                return false;
+            }
+            if (text.length == 1) {
+                line.textContent = '\n';
+                set_modified(true);
                 return false;
             }
         } else if (!event.ctrlKey) {
@@ -542,30 +605,30 @@ function connect_handlers() {
     });
 
     $(document).unbind('keydown').bind('keydown', function(event) {
-        if (event.keyCode == 8) { // backspace
+        if (event.key == 'Backspace') {
             if (!is_editable(event.target)) {
                 console.log('rejecting editing key: ', event.target.tagName.toLowerCase());
                 return false;
             }
         }
         if (event.target.id == 'query') {
-            if (event.keyCode == 9) { // tab
+            if (event.key == 'Tab') {
                 if (!editing || !active) {
                     return false;
                 } else {
                     title.focus();
                 }
             }
-            if ((event.keyCode == 38) || (event.keyCode == 40)) {
+            if ((event.key == 'ArrowUp') || (event.key == 'ArrowDown')) {
                 var box = $('.res_box.selected');
                 var other;
-                if (event.keyCode == 40) { // down
+                if (event.key == 'ArrowDown') {
                     if (box.length == 0) {
                         other = $('.res_box:first-child');
                     } else {
                         other = box.next();
                     }
-                } else if (event.keyCode == 38) { // up
+                } else if (event.key == 'ArrowUp') {
                     if (box.length == 0) {
                         return;
                     } else {
@@ -576,17 +639,17 @@ function connect_handlers() {
                     select_entry(other);
                 }
                 return false;
-            } else if (event.keyCode == 33) { // pgup
+            } else if (event.key == 'PageUp') {
                 output.stop(true, true);
                 output.animate({ scrollTop: output.scrollTop() - 300 }, 200);
                 return false;
-            } else if (event.keyCode == 34) { // pgdn
+            } else if (event.key == 'PageDown') {
                 output.stop(true, true);
                 output.animate({ scrollTop: output.scrollTop() + 300 }, 200);
                 return false;
             }
         } else {
-            if (event.keyCode == 9) { // tab
+            if (event.key == 'Tab') {
                 query.focus();
                 return false;
             }
