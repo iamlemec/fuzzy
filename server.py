@@ -149,16 +149,20 @@ def load_file(fpath, words):
     # split header off
     head, body = bsplit(lines)
 
+    # take out hashbang
+    cut = 2 if head.startswith('#!') else 1
+    head = head[cut:].lstrip()
+
     # handle tags in header vs on next line
     if args.sep:
+        title = head
         if body[0].lstrip().startswith(args.tag):
             tags, body = bsplit(rest)
             tags = [s[1:] for s in tags.split() if s.startswith(args.tag)]
         else:
             tags = []
     else:
-        cut = 2 if head.startswith('#!') else 1
-        head = head[cut:].lstrip().split()
+        head = head.split()
         title = ' '.join([s for s in head if not s.startswith(args.tag)])
         tags = [s[1:] for s in head if s.startswith(args.tag)]
 
