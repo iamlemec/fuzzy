@@ -1,4 +1,4 @@
 [submodule "fzf"]
 	path = fzf
-	url = git@github.com:iamlemec/fzf
+	url = https://github.com/iamlemec/fzf
 	branch = highlight
