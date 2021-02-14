@@ -228,7 +228,7 @@ function render_results(res) {
 
 function render_output(info) {
     ensure_active();
-    title.text(info['title']); // to separate last title word and first tag word for spellcheck :)
+    title.html(info['title']); // to separate last title word and first tag word for spellcheck :)
     tags.empty();
     $(info['tags']).each(function(i, s) {
         tags.append(render_tag(s));
