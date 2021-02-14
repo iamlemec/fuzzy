@@ -151,7 +151,7 @@ def load_file(fpath, words):
 
     # handle tags in header vs on next line
     if args.sep:
-        if body.lstrip().startswith(args.tag):
+        if body[0].lstrip().startswith(args.tag):
             tags, body = bsplit(rest)
             tags = [s[1:] for s in tags.split() if s.startswith(args.tag)]
         else:
