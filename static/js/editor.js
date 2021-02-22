@@ -116,13 +116,50 @@ function intercept_paste(event) {
 
     // insert new text
     insert_at_cursor(text);
+    normalize_cursor();
 
     // stop normal paste
     event.preventDefault();
 }
 
 function remove_highlight() {
-    body.find('.match').replaceWith((i, x) => x);
+    if (body.hasClass('highlight')) {
+        var pos = get_cursor_pos(body[0]);
+        body.text(body.text());
+        set_cursor_pos(body[0].firstChild, pos);
+        body.removeClass('highlight');
+    }
+}
+
+function ensure_newline() {
+    if (!body.text().endsWith('\n')) {
+        var pos = get_cursor_pos(body[0]);
+        body.text(body.text()+'\n');
+        set_cursor_pos(body[0].firstChild, pos);
+    }
+}
+
+function normalize_cursor() {
+    if (!body.hasClass('highlight')) {
+        ensure_newline();
+    }
+
+    // this has to world in highlight mode
+    // where there may be multiple child nodes
+    var pos = get_cursor_pos(body[0]);
+    var len = body.text().length;
+    if (pos == len) {
+        var node = body[0].lastChild;
+        var end = node.textContent.length;
+        var goto = Math.max(0, end - 1);
+        set_cursor_pos(node, goto);
+    }
+}
+
+function cursor_stats() {
+    var pos = get_cursor_pos(body[0]);
+    var len = body[0].textContent.length;
+    console.log(`${pos}/${len}`);
 }
 
 function send_command(cmd, cont) {
@@ -228,13 +265,20 @@ function render_results(res) {
 
 function render_output(info) {
     ensure_active();
+
     title.html(info['title']); // to separate last title word and first tag word for spellcheck :)
+
     tags.empty();
     $(info['tags']).each(function(i, s) {
         tags.append(render_tag(s));
         tags.append(' ');
     });
-    body.html(info['body']);
+
+    var text = info['body'];
+    if (!text.endsWith('\n')) {
+        text += '\n';
+    }
+    body.html(text);
 }
 
 function create_tag(box) {
@@ -301,6 +345,7 @@ function create_websocket(first_time) {
                 render_output(cont);
                 file = cont['file'];
                 set_modified(false);
+                body.addClass('highlight');
                 scroll_top();
             } else if (cmd == 'rename') {
                 var [k, v] = cont;
@@ -414,12 +459,19 @@ function connect_handlers() {
             return false;
         } else if ((event.key == 'Enter') && !event.shiftKey && !event.ctrlKey) {
             insert_at_cursor('\n');
+            normalize_cursor();
             set_modified(true);
             return false;
         } else if (!event.ctrlKey) {
             if (!(active && editing)) {
                 return false;
             }
+        }
+    });
+
+    body.keyup(function(event) {
+        if ((event.key == 'ArrowLeft') || (event.key == 'ArrowRight') || (event.key == 'ArrowUp') || (event.key == 'ArrowDown')) {
+            normalize_cursor();
         }
     });
 
@@ -432,6 +484,7 @@ function connect_handlers() {
         if (active && editing) {
             set_modified(true);
             remove_highlight();
+            normalize_cursor();
         }
     });
 
