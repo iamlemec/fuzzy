@@ -480,7 +480,7 @@ function connect_handlers() {
     body.bind('paste', intercept_paste);
 
     // detect modification
-    output.bind('input', function() {
+    body.bind('input', function() {
         if (active && editing) {
             set_modified(true);
             remove_highlight();

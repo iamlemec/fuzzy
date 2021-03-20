@@ -133,15 +133,18 @@ def match_lines(fname, words):
     match = dict([line.split(':', maxsplit=1) for line in outp.strip().split('\n')])
     return {int(num): line for num, line in match.items()}
 
-def load_file(fpath, words):
+def load_file(fpath, words=None):
     # read file usual way + escape html
     with open(fpath) as fid:
         text = fid.read()
     plain = {num+1: html.escape(line) for num, line in enumerate(text.split('\n'))}
 
     # get matched lines, ignore header line and empty lines
-    match = match_lines(fpath, words)
-    match = {num: line for num, line in match.items() if num != 1 and len(line) > 0}
+    if words is not None:
+        match = match_lines(fpath, words)
+        match = {num: line for num, line in match.items() if num != 1 and len(line) > 0}
+    else:
+        match = {}
 
     # merge in matches
     lines = [match[num] if num in match else plain[num] for num in plain]
